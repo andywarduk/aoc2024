@@ -1,0 +1,7 @@
+target/
+token.txt
+flamegraph.svg
+perf.data*
+.DS_Store
+*.bak
+.z3-trace
