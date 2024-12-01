@@ -14,7 +14,7 @@ if [ "x$token" == "x" ]; then
 	exit 2
 fi
 
-curl -sS --cookie "session=$token" https://adventofcode.com/2023/day/$day/input -o inputs/day$daypad.txt
+curl -sS --cookie "session=$token" https://adventofcode.com/2024/day/$day/input -o inputs/day$daypad.txt
 
 if [ $? -ne 0 ]; then
 	echo "Failed to download"

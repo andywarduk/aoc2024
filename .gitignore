@@ -1,4 +1,5 @@
 target/
+inputs/
 token.txt
 flamegraph.svg
 perf.data*
