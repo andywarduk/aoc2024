@@ -7,7 +7,7 @@ use std::io::{BufRead, BufReader, Lines};
 #[cfg(not(miri))]
 use memmap2::Mmap;
 
-/// Parse an input file to a vector with a given transform
+/// Parse an input file by line to a vector with a given transform
 pub fn parse_input_vec<T, F>(day: usize, tfn: F) -> Result<Vec<T>, Box<dyn Error>>
 where
     F: FnMut(String) -> T,
@@ -23,6 +23,12 @@ where
 {
     let input = Input::new(day)?;
     parse_buf_line(input.lines(), tfn)
+}
+
+/// Reads an input file to a string
+pub fn read_input_file(day: usize) -> Result<String, Box<dyn Error>> {
+    let input = Input::new(day)?;
+    input.string()
 }
 
 /// Parse an input string to a vector with a given transform
@@ -98,6 +104,15 @@ impl Input {
         let buf_reader = BufReader::new(self.mmap.as_ref());
 
         buf_reader.lines()
+    }
+
+    fn string(&self) -> Result<String, Box<dyn Error>> {
+        #[cfg(not(miri))]
+        let s = String::from_utf8(self.mmap.as_ref().to_vec())?;
+        #[cfg(miri)]
+        let s = self.mmap.clone();
+
+        Ok(s)
     }
 }
 
