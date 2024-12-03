@@ -53,12 +53,12 @@ where
     parse_buf_vec(input.lines(), tfn)
 }
 
-/// Memory mapped input
+/// Memory mapped input (string under miri)
 struct Input {
     #[cfg(not(miri))]
     mmap: Mmap,
     #[cfg(miri)]
-    mmap: String,
+    string: String,
 }
 
 impl Input {
@@ -94,14 +94,18 @@ impl Input {
     #[cfg(miri)]
     fn new_from_file(mut file: File) -> Result<Self, Box<dyn Error>> {
         // Read to string
-        let mut mmap = String::new();
-        file.read_to_string(&mut mmap)?;
+        let mut string = String::new();
+        file.read_to_string(&mut string)?;
 
-        Ok(Self { mmap })
+        Ok(Self { string })
     }
 
     fn lines(&self) -> Lines<BufReader<&[u8]>> {
+        #[cfg(not(miri))]
         let buf_reader = BufReader::new(self.mmap.as_ref());
+
+        #[cfg(miri)]
+        let buf_reader = BufReader::new(self.string.as_ref());
 
         buf_reader.lines()
     }
@@ -110,7 +114,7 @@ impl Input {
         #[cfg(not(miri))]
         let s = String::from_utf8(self.mmap.as_ref().to_vec())?;
         #[cfg(miri)]
-        let s = self.mmap.clone();
+        let s = self.string.clone();
 
         Ok(s)
     }
