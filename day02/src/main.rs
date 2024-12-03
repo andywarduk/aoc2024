@@ -14,76 +14,39 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn part1(input: &[InputEnt]) -> usize {
-    input.iter().filter(|&nums| is_safe(nums)).count()
+    input.iter().filter(|nums| is_safe(nums)).count()
 }
 
 fn part2(input: &[InputEnt]) -> usize {
-    input
-        .iter()
-        .filter(|&nums| {
-            if is_safe(nums) {
-                true
-            } else {
-                // Try with a number removed
-                for i in 0..nums.len() {
-                    let mut nums2 = nums.clone();
-                    nums2.remove(i);
-
-                    if is_safe(&nums2) {
-                        return true;
-                    }
-                }
-
-                false
-            }
-        })
-        .count()
+    input.iter().filter(|nums| is_tolerable(nums)).count()
 }
 
-fn is_safe(nums: &[u8]) -> bool {
-    let mut num_iter = nums.iter();
-    let mut increasing = None;
-    let mut last = num_iter.next().expect("Failed to get first number");
+fn is_safe(nums: &[i8]) -> bool {
+    // Check strictly monotonic increasing or decreasing with max 3 gap
+    nums.is_sorted_by(|a, b| (1..=3).contains(&(b - a)))
+        || nums.is_sorted_by(|a, b| (1..=3).contains(&(a - b)))
+}
 
-    for n in num_iter {
-        match increasing {
-            None => {
-                if n == last {
-                    return false;
-                } else {
-                    increasing = Some(n > last);
-                }
-            }
-            Some(true) => {
-                if n <= last {
-                    return false;
-                }
-            }
-            Some(false) => {
-                if n >= last {
-                    return false;
-                }
-            }
-        }
-
-        if n.abs_diff(*last) > 3 {
-            return false;
-        }
-
-        last = n;
-    }
-
-    true
+fn is_tolerable(nums: &[i8]) -> bool {
+    (0..nums.len()).any(|i| {
+        is_safe(
+            &(nums
+                .iter()
+                .enumerate()
+                .filter_map(|(idx, n)| if idx != i { Some(*n) } else { None })
+                .collect::<Vec<_>>()),
+        )
+    })
 }
 
 // Input parsing
 
-type InputEnt = Vec<u8>;
+type InputEnt = Vec<i8>;
 
 fn input_transform(line: String) -> InputEnt {
     line.split_ascii_whitespace()
         .map(|s| {
-            s.parse::<u8>()
+            s.parse::<i8>()
                 .unwrap_or_else(|_| panic!("{s} is not an integer"))
         })
         .collect()

@@ -12,7 +12,7 @@ fi
 
 daypad="$(printf %02d $1)"
 
-cargo build --release --bin day$daypad --quiet
+cargo build --release --bin day$daypad
 
 if [ $? -ne 0 ]
 then
@@ -37,6 +37,8 @@ case "x$(uname)" in
 esac
 
 outfile=stats/day$daypad-$outadd.txt
+# Warm up
+target/release/day$daypad >/dev/null 2>&1
 \time $flags target/release/day$daypad 2>&1 | tee "$outfile"
 echo "------------------------------------------" >> "$outfile"
 echo $uname >> "$outfile"
