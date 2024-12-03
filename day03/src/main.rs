@@ -25,36 +25,31 @@ fn part1(input: &str) -> u64 {
 
             a * b
         })
-        .sum::<u64>()
+        .sum()
 }
 
 fn part2(input: &str) -> u64 {
     let mut pos = 0;
-    let mut enabled = true;
-    let mut filtered = String::new();
+    let mut filtered = String::with_capacity(input.len());
 
     loop {
-        if enabled {
-            match input[pos..].find("don't()") {
-                Some(p) => {
-                    filtered.push_str(&input[pos..(pos + p)]);
-                    pos += p;
-                    enabled = false;
-                }
-                None => {
-                    filtered.push_str(&input[pos..]);
-                    break;
-                }
+        match input[pos..].find("don't()") {
+            Some(p) => {
+                filtered.push_str(&input[pos..(pos + p)]);
+                pos += p;
             }
-        } else {
-            match input[pos..].find("do()") {
-                Some(p) => {
-                    pos += p + 4;
-                    enabled = true;
-                }
-                None => {
-                    break;
-                }
+            None => {
+                filtered.push_str(&input[pos..]);
+                break;
+            }
+        }
+
+        match input[pos..].find("do()") {
+            Some(p) => {
+                pos += p + 4;
+            }
+            None => {
+                break;
             }
         }
     }
