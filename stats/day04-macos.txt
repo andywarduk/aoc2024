@@ -1,0 +1,45 @@
+thread 'main' panicked at day04/src/main.rs:9:5:
+TODO REMOVE ME
+stack backtrace:
+   0:        0x1002d2ba8 - <std::sys::backtrace::BacktraceLock::print::DisplayBacktrace as core::fmt::Display>::fmt::hafa9f6b86d1245af
+   1:        0x1002a6bf4 - core::fmt::write::h3df118ba13463e6d
+   2:        0x1002b24e4 - std::io::Write::write_fmt::h98ec7bb96d5653b5
+   3:        0x1002d60b4 - std::sys::backtrace::BacktraceLock::print::h356f14e593653870
+   4:        0x1002d6ba4 - std::panicking::rust_panic_with_hook::h6a3e19d8b08d2e9b
+   5:        0x1002d6154 - std::panicking::begin_panic_handler::{{closure}}::hb92e57c04fba6fd8
+   6:        0x1002d60ec - std::sys::backtrace::__rust_end_short_backtrace::h9387a52a1e3277c3
+   7:        0x1002d60e0 - _rust_begin_unwind
+   8:        0x1002d7688 - core::panicking::panic_fmt::h1a0f084f2ad39b1d
+   9:        0x1002a9e4c - day04::main::h4d1130da14dd142e
+  10:        0x1002a939c - std::sys::backtrace::__rust_begin_short_backtrace::h735cd3d19beaca5d
+  11:        0x1002a9318 - std::rt::lang_start::{{closure}}::hb74e3517527689ce
+  12:        0x1002b1fc8 - std::rt::lang_start_internal::h035df9ff6960926a
+  13:        0x1002a93d4 - _main
+time: command terminated abnormally
+        0.01 real         0.00 user         0.00 sys
+             1540096  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+                 220  page reclaims
+                   0  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   5  voluntary context switches
+                   9  involuntary context switches
+            29124353  instructions retired
+             8873387  cycles elapsed
+              983680  peak memory footprint
+------------------------------------------
+Darwin 24.1.0 Darwin Kernel Version 24.1.0: Thu Oct 10 21:02:45 PDT 2024; root:xnu-11215.41.3~2/RELEASE_ARM64_T8112 arm64 arm
+rustc 1.85.0-nightly (a2545fd6f 2024-11-28)
+binary: rustc
+commit-hash: a2545fd6fc66b4323f555223a860c451885d1d2b
+commit-date: 2024-11-28
+host: aarch64-apple-darwin
+release: 1.85.0-nightly
+LLVM version: 19.1.4

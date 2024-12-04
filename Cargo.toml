@@ -1,3 +1,5 @@
+cargo-features = ["profile-rustflags"]
+
 [workspace.package]
 edition = "2024"
 authors = ["Andrew Ward (andy.ward.uk@gmail.com)"]
@@ -5,8 +7,9 @@ authors = ["Andrew Ward (andy.ward.uk@gmail.com)"]
 [workspace]
 resolver = "2"
 
-members = ["aoc", "day01", "day02", "day03"]
+members = ["aoc", "day01", "day02", "day03", "day04"]
 
 [profile.release]
-debug = true
-lto = true
+debug = false
+lto = "fat"
+strip = true
