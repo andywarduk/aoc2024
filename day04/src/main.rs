@@ -27,6 +27,37 @@ const DIRECTIONS: [(i8, i8); 8] = [
 fn part1(input: &[InputEnt]) -> u64 {
     let mut matches = 0;
 
+    let check_word = |mut x: isize, mut y: isize, dx: isize, dy: isize| -> bool {
+        let maxx = input[0].len() as isize;
+        let maxy = input.len() as isize;
+
+        // Check for MAS in the given direction
+        for i in 1..4 {
+            // Change X
+            x += dx;
+
+            // Bounds check
+            if x < 0 || x >= maxx {
+                return false;
+            }
+
+            // Change Y
+            y += dy;
+
+            // Bounds check
+            if y < 0 || y >= maxy {
+                return false;
+            }
+
+            // Check the board
+            if input[y as usize][x as usize] != i {
+                return false;
+            }
+        }
+
+        true
+    };
+
     // Loop each baord position
     for (y, r) in input.iter().enumerate() {
         for (x, c) in r.iter().enumerate() {
@@ -35,7 +66,7 @@ fn part1(input: &[InputEnt]) -> u64 {
                 // Search in all directions
                 for (dx, dy) in DIRECTIONS {
                     // Check for th word in this direction
-                    if check_word(input, x as isize, y as isize, dx as isize, dy as isize) {
+                    if check_word(x as isize, y as isize, dx as isize, dy as isize) {
                         // Word found
                         matches += 1;
                     }
@@ -45,37 +76,6 @@ fn part1(input: &[InputEnt]) -> u64 {
     }
 
     matches
-}
-
-fn check_word(input: &[InputEnt], mut x: isize, mut y: isize, dx: isize, dy: isize) -> bool {
-    let maxx = input[0].len() as isize;
-    let maxy = input.len() as isize;
-
-    // Check for MAS in the given direction
-    for i in 1..4 {
-        // Change X
-        x += dx;
-
-        // Bounds check
-        if x < 0 || x >= maxx {
-            return false;
-        }
-
-        // Change Y
-        y += dy;
-
-        // Bounds check
-        if y < 0 || y >= maxy {
-            return false;
-        }
-
-        // Check the board
-        if input[y as usize][x as usize] != i {
-            return false;
-        }
-    }
-
-    true
 }
 
 fn part2(input: &[InputEnt]) -> u64 {
