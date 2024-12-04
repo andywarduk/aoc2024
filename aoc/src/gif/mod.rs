@@ -157,7 +157,7 @@ impl Gif {
         )
     }
 
-    /// Returns a new empty fram for the image
+    /// Returns a new empty frame for the image
     #[inline]
     pub fn empty_frame(&self) -> Vec<Vec<u8>> {
         let (w, h) = self.dimensions();

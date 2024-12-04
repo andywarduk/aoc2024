@@ -143,14 +143,14 @@ const LETTERS: [[[u8; 5]; 5]; 4] = [
 ];
 
 fn draw_hits(input: &[InputEnt], hits: &[Vec<u8>], file: &str) -> Result<(), Box<dyn Error>> {
+    // Calculate maximum hits
     let max_hits = hits
         .iter()
         .map(|l| l.iter().cloned().max().unwrap())
         .max()
         .unwrap();
 
-    println!("max hits is {max_hits}");
-
+    // Build the palette
     let mut palette = Vec::new();
 
     palette.push([0, 0, 0]);
@@ -164,17 +164,24 @@ fn draw_hits(input: &[InputEnt], hits: &[Vec<u8>], file: &str) -> Result<(), Box
     // No hit text colour
     palette.push([255, 0, 0]);
 
+    // Calculate dimensions
     let width = (input[0].len() * CELL_SIZE) as u16;
     let height = (input.len() * CELL_SIZE) as u16;
 
+    // Create the gif
     let mut gif = Gif::new(file, &palette, width, height, 1, 1)?;
 
-    let mut frame_data = vec![vec![0; width as usize]; height as usize];
+    // Create the frame
+    let mut frame_data = gif.empty_frame();
 
+    // For each hit line
     for (hy, hl) in hits.iter().enumerate() {
+        // Calc gif y
         let gy = hy * CELL_SIZE;
 
+        // For each column in hit line
         for (hx, hc) in hl.iter().enumerate() {
+            // Calc gif x
             let gx = hx * CELL_SIZE;
 
             // Fill background
@@ -198,6 +205,7 @@ fn draw_hits(input: &[InputEnt], hits: &[Vec<u8>], file: &str) -> Result<(), Box
         }
     }
 
+    // Output the frame
     gif.draw_frame(frame_data, 0)?;
 
     Ok(())
