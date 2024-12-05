@@ -1,4 +1,4 @@
-use std::{collections::HashMap, error::Error};
+use std::{cmp::Ordering, collections::HashSet, error::Error};
 
 use aoc::input::read_input_file;
 
@@ -14,103 +14,44 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn part1(orders: &Vec<Vec<u8>>, prints: &Vec<Vec<u8>>) -> u64 {
-    let mut sum: u64 = 0;
-    let mut map: HashMap<u8, Vec<u8>> = HashMap::new();
-
-    for o in orders {
-        map.entry(o[0])
-            .and_modify(|e| e.push(o[1]))
-            .or_insert(vec![o[1]]);
-    }
-
-    for p in prints {
-        let mut ok = true;
-
-        'failed: for (i, n) in p.iter().enumerate().skip(1) {
-            if let Some(v) = map.get(n) {
-                for n in v {
-                    if p[..i].contains(n) {
-                        ok = false;
-                        break 'failed;
-                    }
-                }
-            }
-        }
-
-        if ok {
-            sum += p[p.len() / 2] as u64;
-        }
-    }
-
-    sum
+fn part1(orders: &PageOrder, prints: &[Vec<u8>]) -> u64 {
+    prints
+        .iter()
+        .filter_map(|print| match correct_order(print, orders) {
+            None => Some(print[print.len() / 2] as u64),
+            _ => None,
+        })
+        .sum()
 }
 
-fn part2(orders: &Vec<Vec<u8>>, prints: &Vec<Vec<u8>>) -> u64 {
-    let mut sum: u64 = 0;
-    let mut map: HashMap<u8, Vec<u8>> = HashMap::new();
-
-    for o in orders {
-        map.entry(o[0])
-            .and_modify(|e| e.push(o[1]))
-            .or_insert(vec![o[1]]);
-    }
-
-    for p in prints {
-        let mut ok = true;
-
-        'failed: for (i, n) in p.iter().enumerate().skip(1) {
-            if let Some(v) = map.get(n) {
-                for n in v {
-                    if p[..i].contains(n) {
-                        ok = false;
-                        break 'failed;
-                    }
-                }
-            }
-        }
-
-        if !ok {
-            let o = find_order(p, &map);
-            sum += o[o.len() / 2] as u64;
-        }
-    }
-
-    sum
+fn part2(orders: &PageOrder, prints: &[Vec<u8>]) -> u64 {
+    prints
+        .iter()
+        .filter_map(|print| correct_order(print, orders).map(|order| order[order.len() / 2] as u64))
+        .sum()
 }
 
-fn find_order(p: &[u8], map: &HashMap<u8, Vec<u8>>) -> Vec<u8> {
-    for start in p {
-        if let Some(o) = find_order_rec(&[*start], p, map) {
-            return o;
+fn correct_order(print: &[u8], orders: &PageOrder) -> Option<Vec<u8>> {
+    let mut sorted = print.to_vec();
+
+    sorted.sort_by(|a, b| {
+        if orders.contains(&[*a, *b]) {
+            Ordering::Less
+        } else if orders.contains(&[*b, *a]) {
+            Ordering::Greater
+        } else {
+            Ordering::Equal
         }
-    }
+    });
 
-    panic!("No solution found")
-}
-
-fn find_order_rec(o: &[u8], p: &[u8], map: &HashMap<u8, Vec<u8>>) -> Option<Vec<u8>> {
-    if let Some(v) = map.get(&o[o.len() - 1]) {
-        for n in v {
-            if p.contains(n) && !o.contains(n) {
-                let next = [o, &[*n]].concat();
-
-                if next.len() == p.len() {
-                    println!("Found {next:?}");
-                    return Some(next);
-                } else if let Some(o) = find_order_rec(&[o, &[*n]].concat(), p, map) {
-                    return Some(o);
-                }
-            }
-        }
-    }
-
-    None
+    if sorted != *print { Some(sorted) } else { None }
 }
 
 // Input parsing
 
-fn parse_input(input: &str) -> (Vec<Vec<u8>>, Vec<Vec<u8>>) {
+type PageOrder = HashSet<[u8; 2]>;
+
+fn parse_input(input: &str) -> (PageOrder, Vec<Vec<u8>>) {
     let mut sections = input.split("\n\n");
 
     let section = sections.next().expect("Section 1 not found");
@@ -118,9 +59,18 @@ fn parse_input(input: &str) -> (Vec<Vec<u8>>, Vec<Vec<u8>>) {
     let orders = section
         .lines()
         .map(|l| {
-            l.split("|")
-                .map(|n| n.parse::<u8>().expect("Error parsing u8"))
-                .collect()
+            let mut s = l.split("|");
+
+            [
+                s.next()
+                    .expect("First u8 not found")
+                    .parse::<u8>()
+                    .expect("Error parsing first u8"),
+                s.next()
+                    .expect("Second u8 not found")
+                    .parse::<u8>()
+                    .expect("Error parsing second u8"),
+            ]
         })
         .collect();
 
