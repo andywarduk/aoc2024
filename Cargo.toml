@@ -7,7 +7,16 @@ authors = ["Andrew Ward (andy.ward.uk@gmail.com)"]
 [workspace]
 resolver = "2"
 
-members = ["aoc", "day01", "day02", "day03", "day04", "day04vis", "day05"]
+members = [
+    "aoc",
+    "day01",
+    "day02",
+    "day03",
+    "day04",
+    "day04vis",
+    "day05",
+    "day06",
+]
 
 [profile.release]
 debug = false
