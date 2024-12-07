@@ -14,17 +14,21 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn part1(input: &[Equation]) -> u64 {
-    input
-        .iter()
-        .map(|e| if solveable(e, false) { e.answer } else { 0 })
-        .sum::<u64>()
+    solveable_sum(input, false)
 }
 
 fn part2(input: &[Equation]) -> u64 {
-    input
-        .iter()
-        .map(|e| if solveable(e, true) { e.answer } else { 0 })
-        .sum::<u64>()
+    solveable_sum(input, true)
+}
+
+fn solveable_sum(input: &[Equation], try_concat: bool) -> u64 {
+    input.iter().fold(0, |acc, e| {
+        if solveable(e, try_concat) {
+            acc + e.answer
+        } else {
+            acc
+        }
+    })
 }
 
 fn solveable(e: &Equation, try_concat: bool) -> bool {
@@ -32,26 +36,33 @@ fn solveable(e: &Equation, try_concat: bool) -> bool {
 }
 
 fn solveable_iter(idx: usize, res: u64, e: &Equation, try_concat: bool) -> bool {
+    // Any more values?
     if idx == e.values.len() {
+        // No - check against answer
         return res == e.answer;
     }
 
+    // Try adding first
     let next = res + e.values[idx];
 
     if next <= e.answer && solveable_iter(idx + 1, next, e, try_concat) {
         return true;
     }
 
+    // Try multiplication
     let next = res * e.values[idx];
 
     if next <= e.answer && solveable_iter(idx + 1, next, e, try_concat) {
         return true;
     }
 
+    // Try concatenating the digits
     if try_concat {
-        let mut next_str = res.to_string();
-        next_str.push_str(&e.values[idx].to_string());
-        let next = next_str.parse::<u64>().expect("Unable to parse");
+        // Count digits in the next number
+        let digits = 1 + e.values[idx].ilog10();
+
+        // Multiply by 10^digits and add
+        let next = (res * 10u64.pow(digits)) + e.values[idx];
 
         if next <= e.answer && solveable_iter(idx + 1, next, e, try_concat) {
             return true;
@@ -61,11 +72,9 @@ fn solveable_iter(idx: usize, res: u64, e: &Equation, try_concat: bool) -> bool 
     false
 }
 
-type EqnNum = u64;
-
 struct Equation {
-    answer: EqnNum,
-    values: Vec<EqnNum>,
+    answer: u64,
+    values: Vec<u64>,
 }
 
 // Input parsing
@@ -76,7 +85,7 @@ fn input_transform(line: String) -> Equation {
     let answer = s
         .next()
         .expect("Answer not found")
-        .parse::<EqnNum>()
+        .parse::<u64>()
         .expect("Answer not valid");
 
     let values = s
@@ -84,7 +93,7 @@ fn input_transform(line: String) -> Equation {
         .expect("Values not found")
         .trim_ascii_start()
         .split_ascii_whitespace()
-        .map(|v| v.parse::<EqnNum>().expect("Value not valid"))
+        .map(|v| v.parse::<u64>().expect("Value not valid"))
         .collect::<Vec<_>>();
 
     Equation { answer, values }
