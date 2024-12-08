@@ -1,7 +1,6 @@
 use std::{
     collections::{HashMap, HashSet},
     error::Error,
-    ops::Index,
 };
 
 use aoc::{gif::Gif, input::parse_input_vec};
