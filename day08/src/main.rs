@@ -71,8 +71,6 @@ fn part2(input: &[InputEnt]) -> u64 {
             if x < 0 || x as usize >= input[0].len() || y < 0 || y as usize >= input.len() {
                 break;
             }
-
-            intpos.insert((x as usize, y as usize));
         }
     };
 
