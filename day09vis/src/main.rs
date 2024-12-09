@@ -51,57 +51,13 @@ fn part2(input: &str) -> Result<(), Box<dyn Error>> {
     let mut gif = Gif::new(
         "vis/day09-2.gif",
         &palette,
-        XDIM as u16,
-        YDIM as u16,
-        SCALE as u16,
-        SCALE as u16,
+        (XDIM * SCALE) as u16 + 1,
+        (YDIM * SCALE) as u16 + 1,
+        1,
+        1,
     )?;
 
-    let mut draw_frame = |alloc_in: &Vec<Block2>,
-                          alloc_out: &Vec<(bool, Block2)>,
-                          free: &Vec<Block2>,
-                          freed: &Vec<Block2>|
-     -> Result<(), Box<dyn Error>> {
-        let mut frame = gif.empty_frame();
-
-        for a in alloc_in.iter() {
-            for i in a.pos..(a.pos + a.len as u32) {
-                let y = i as usize / XDIM;
-                let x = i as usize % XDIM;
-                frame[y][x] = 1;
-            }
-        }
-
-        for (moved, a) in alloc_out.iter() {
-            for i in a.pos..(a.pos + a.len as u32) {
-                let y = i as usize / XDIM;
-                let x = i as usize % XDIM;
-                frame[y][x] = if *moved { 2 } else { 1 };
-            }
-        }
-
-        for f in free.iter() {
-            for i in f.pos..(f.pos + f.len as u32) {
-                let y = i as usize / XDIM;
-                let x = i as usize % XDIM;
-                frame[y][x] = 3;
-            }
-        }
-
-        for f in freed.iter() {
-            for i in f.pos..(f.pos + f.len as u32) {
-                let y = i as usize / XDIM;
-                let x = i as usize % XDIM;
-                frame[y][x] = 4;
-            }
-        }
-
-        gif.draw_frame_identical_check(frame, 2, aoc::gif::IdenticalAction::Ignore)?;
-
-        Ok(())
-    };
-
-    draw_frame(&alloc_in, &alloc_out, &free, &freed)?;
+    draw_frame(&mut gif, &alloc_in, &alloc_out, &free, &freed)?;
 
     while let Some(a) = alloc_in.pop() {
         // Find first free
@@ -134,10 +90,56 @@ fn part2(input: &str) -> Result<(), Box<dyn Error>> {
             alloc_out.push((false, a))
         }
 
-        draw_frame(&alloc_in, &alloc_out, &free, &freed)?;
+        draw_frame(&mut gif, &alloc_in, &alloc_out, &free, &freed)?;
     }
 
     gif.delay(500)?;
+
+    Ok(())
+}
+
+fn draw_frame(
+    gif: &mut Gif,
+    alloc_in: &[Block2],
+    alloc_out: &[(bool, Block2)],
+    free: &[Block2],
+    freed: &[Block2],
+) -> Result<(), Box<dyn Error>> {
+    let mut frame = gif.empty_frame();
+
+    let mut draw_block = |block: &Block2, colour| {
+        for i in 0..block.len {
+            let pos = block.pos as usize + i as usize;
+            let y = (pos / XDIM) * SCALE;
+            let x = (pos % XDIM) * SCALE;
+
+            for dy in 1..SCALE {
+                let sx = if i == 0 { 1 } else { 0 };
+
+                for dx in sx..SCALE {
+                    frame[y + dy][x + dx] = colour;
+                }
+            }
+        }
+    };
+
+    for a in alloc_in.iter() {
+        draw_block(a, 1);
+    }
+
+    for (moved, a) in alloc_out.iter() {
+        draw_block(a, if *moved { 2 } else { 1 });
+    }
+
+    for f in free.iter() {
+        draw_block(f, 3);
+    }
+
+    for f in freed.iter() {
+        draw_block(f, 4);
+    }
+
+    gif.draw_frame_identical_check(frame, 2, aoc::gif::IdenticalAction::Ignore)?;
 
     Ok(())
 }
