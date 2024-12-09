@@ -93,6 +93,11 @@ fn part2(input: &str) -> u64 {
 
     while let Some(a) = alloc_in.pop() {
         // Find first free
+        if free[0].pos > a.pos {
+            alloc_in.push(a);
+            break;
+        }
+
         if let Some(f) = free.iter().position(|f| f.len >= a.len && f.pos < a.pos) {
             // Move to free block
             alloc_out.push(Block2 {
@@ -113,9 +118,9 @@ fn part2(input: &str) -> u64 {
         }
     }
 
-    alloc_out
+    alloc_in
         .iter()
-        .rev()
+        .chain(alloc_out.iter().rev())
         .enumerate()
         .map(|(id, a)| {
             (0..a.len)
