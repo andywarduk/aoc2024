@@ -73,13 +73,16 @@ const DIRS: [[isize; 2]; 4] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 fn pos_from(input: &[InputEnt], x: usize, y: usize, h: u8) -> impl Iterator<Item = (usize, usize)> {
     DIRS.into_iter().filter_map(move |[dx, dy]| {
-        if (dx >= 0 || x > 0) && (dy >= 0 || y > 0) {
-            let nx = (x as isize + dx) as usize;
-            let ny = (y as isize + dy) as usize;
-
-            if nx < input[0].len() && ny < input.len() && input[ny][nx] == h {
-                return Some((nx, ny));
-            }
+        match x.checked_add_signed(dx) {
+            Some(nx) if nx < input[0].len() => match y.checked_add_signed(dy) {
+                Some(ny) if ny < input.len() => {
+                    if input[ny][nx] == h {
+                        return Some((nx, ny));
+                    }
+                }
+                _ => (),
+            },
+            _ => (),
         }
 
         None
