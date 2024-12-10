@@ -13,9 +13,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+type Coord = (usize, usize);
+
 fn part1(input: &[InputEnt]) -> u64 {
     heads(input)
-        .into_iter()
         .map(|(x, y)| {
             let mut dests = HashSet::new();
 
@@ -26,7 +27,7 @@ fn part1(input: &[InputEnt]) -> u64 {
         .sum()
 }
 
-fn walk1(input: &[InputEnt], x: usize, y: usize, h: u8, dests: &mut HashSet<(usize, usize)>) {
+fn walk1(input: &[InputEnt], x: usize, y: usize, h: u8, dests: &mut HashSet<Coord>) {
     pos_from(input, x, y, h).for_each(|(nx, ny)| {
         if h == 9 {
             dests.insert((nx, ny));
@@ -37,10 +38,7 @@ fn walk1(input: &[InputEnt], x: usize, y: usize, h: u8, dests: &mut HashSet<(usi
 }
 
 fn part2(input: &[InputEnt]) -> u64 {
-    heads(input)
-        .into_iter()
-        .map(|(x, y)| walk2(input, x, y, 1))
-        .sum()
+    heads(input).map(|(x, y)| walk2(input, x, y, 1)).sum()
 }
 
 fn walk2(input: &[InputEnt], x: usize, y: usize, h: u8) -> u64 {
@@ -55,23 +53,17 @@ fn walk2(input: &[InputEnt], x: usize, y: usize, h: u8) -> u64 {
         .sum()
 }
 
-fn heads(input: &[InputEnt]) -> Vec<(usize, usize)> {
-    input
-        .iter()
-        .enumerate()
-        .fold(Vec::new(), |mut acc, (y, l)| {
-            acc.extend(l.iter().enumerate().filter_map(
-                |(x, h)| {
-                    if *h == 0 { Some((x, y)) } else { None }
-                },
-            ));
-            acc
-        })
+fn heads(input: &[InputEnt]) -> impl Iterator<Item = Coord> {
+    input.iter().enumerate().flat_map(|(y, l)| {
+        l.iter()
+            .enumerate()
+            .filter_map(move |(x, h)| if *h == 0 { Some((x, y)) } else { None })
+    })
 }
 
 const DIRS: [[isize; 2]; 4] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
-fn pos_from(input: &[InputEnt], x: usize, y: usize, h: u8) -> impl Iterator<Item = (usize, usize)> {
+fn pos_from(input: &[InputEnt], x: usize, y: usize, h: u8) -> impl Iterator<Item = Coord> {
     DIRS.into_iter().filter_map(move |[dx, dy]| {
         match x.checked_add_signed(dx) {
             Some(nx) if nx < input[0].len() => match y.checked_add_signed(dy) {
