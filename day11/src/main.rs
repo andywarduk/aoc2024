@@ -54,7 +54,7 @@ fn count(input: &InputEnt, iters: u8) -> u64 {
             if (log10 & 1) == 1 {
                 // Split even number
                 if iters == 1 {
-                    note.insert((num, iters), 2);
+                    note.insert((num, iters), 2u64);
                     rework = false;
                 } else {
                     let div = 10u64.pow((log10 + 1) / 2);
