@@ -39,21 +39,25 @@ fn get_shapes(input: &[InputEnt]) -> Vec<Shape> {
     let mut touched: HashSet<Coord> = HashSet::new();
 
     for (y, l) in input.iter().enumerate() {
-        for (x, _) in l.iter().enumerate() {
+        (0..l.len()).for_each(|x| {
             if !touched.contains(&(x, y)) {
-                let (squares, xbounds, ybounds) = shape_area(input, x, y);
+                // Get shape topology
+                let (squares, xbounds, ybounds) = shape_topology(input, x, y);
 
+                // Add squares to touched list
                 touched.extend(&squares);
 
+                // Get perimeter and side count
                 let (perimeter, sides) = perimeter_sides(&squares, &xbounds, &ybounds);
 
+                // Add shape
                 shapes.push(Shape {
                     area: squares.len() as u64,
                     perimeter,
                     sides,
                 })
             }
-        }
+        });
     }
 
     shapes
@@ -67,7 +71,7 @@ fn perimeter_sides(
     let mut perimeter = 0;
     let mut sides = 0;
 
-    // Horizontal
+    // Horizontal edges
     for (&y, &(xmin, xmax)) in xbounds {
         let mut lasttop = false;
         let mut lastbottom = false;
@@ -102,7 +106,7 @@ fn perimeter_sides(
         }
     }
 
-    // Vertical
+    // Vertical edges
     for (&x, &(ymin, ymax)) in ybounds {
         let mut lastleft = false;
         let mut lastright = false;
@@ -146,7 +150,7 @@ type ShapeTopology = (
     BTreeMap<usize, (usize, usize)>,
 );
 
-fn shape_area(input: &[InputEnt], x: usize, y: usize) -> ShapeTopology {
+fn shape_topology(input: &[InputEnt], x: usize, y: usize) -> ShapeTopology {
     let mut squares = HashSet::new();
     let mut xbounds = BTreeMap::new();
     let mut ybounds = BTreeMap::new();
@@ -154,26 +158,19 @@ fn shape_area(input: &[InputEnt], x: usize, y: usize) -> ShapeTopology {
     let c = input[y][x];
     let mut work = VecDeque::new();
 
+    // Add initial coordinate to squares set
     squares.insert((x, y));
+
+    // Add first work item
     work.push_back((x, y));
 
+    // Process work queue
     while let Some((x, y)) = work.pop_front() {
-        xbounds
-            .entry(y)
-            .and_modify(|(minx, maxx)| {
-                *minx = x.min(*minx);
-                *maxx = x.max(*maxx);
-            })
-            .or_insert((x, x));
+        // Update x and y bounds
+        update_bounds(&mut xbounds, y, x);
+        update_bounds(&mut ybounds, x, y);
 
-        ybounds
-            .entry(x)
-            .and_modify(|(miny, maxy)| {
-                *miny = y.min(*miny);
-                *maxy = y.max(*maxy);
-            })
-            .or_insert((y, y));
-
+        // Do flood fill step
         for (x1, y1) in flood_step(input, x, y, c) {
             if !squares.contains(&(x1, y1)) {
                 squares.insert((x1, y1));
@@ -185,10 +182,20 @@ fn shape_area(input: &[InputEnt], x: usize, y: usize) -> ShapeTopology {
     (squares, xbounds, ybounds)
 }
 
+fn update_bounds(bounds: &mut BTreeMap<usize, (usize, usize)>, key: usize, value: usize) {
+    bounds
+        .entry(key)
+        .and_modify(|(min, max)| {
+            *min = value.min(*min);
+            *max = value.max(*max);
+        })
+        .or_insert((value, value));
+}
+
 const DIRS: [[isize; 2]; 4] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
 fn flood_step(input: &[InputEnt], x: usize, y: usize, c: char) -> impl Iterator<Item = Coord> {
-    DIRS.into_iter().filter_map(move |[dx, dy]| {
+    DIRS.iter().filter_map(move |&[dx, dy]| {
         match x.checked_add_signed(dx) {
             Some(nx) if nx < input[0].len() => match y.checked_add_signed(dy) {
                 Some(ny) if ny < input.len() => {
