@@ -8,5 +8,3 @@ edition = "2024"
 [dependencies]
 aoc = { path = "../aoc" }
 regex = "1.11.1"
-rust_decimal = "1.36.0"
-rust_decimal_macros = "1.36.0"

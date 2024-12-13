@@ -2,8 +2,6 @@ use std::error::Error;
 
 use aoc::input::read_input_file;
 use regex::Regex;
-use rust_decimal::prelude::*;
-use rust_decimal_macros::dec;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -19,61 +17,40 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn part1(input: &[Claw]) -> u64 {
     input
         .iter()
-        .map(|c| match presses(c, (c.target.0, c.target.1)) {
-            Some((apresses, bpresses)) => (apresses * 3) + bpresses,
-            None => 0,
-        })
+        .filter_map(|c| presses(c, 0))
+        .map(|(apresses, bpresses)| (apresses * 3) + bpresses)
         .sum()
 }
 
 fn part2(input: &[Claw]) -> u64 {
     input
         .iter()
-        .map(|c| {
-            match presses(
-                c,
-                (c.target.0 + 10000000000000, c.target.1 + 10000000000000),
-            ) {
-                Some((apresses, bpresses)) => (apresses * 3) + bpresses,
-                None => 0,
-            }
-        })
+        .filter_map(|c| presses(c, 10000000000000))
+        .map(|(apresses, bpresses)| (apresses * 3) + bpresses)
         .sum()
 }
 
-fn presses(c: &Claw, target: Coord) -> Option<(u64, u64)> {
+fn presses(c: &Claw, adjust: u64) -> Option<(u64, u64)> {
     // Find line intersection
-    let x1 = dec!(0);
-    let y1 = dec!(0);
-    let x2 = Decimal::from(c.a.0);
-    let y2 = Decimal::from(c.a.1);
-    let x3 = Decimal::from(target.0);
-    let y3 = Decimal::from(target.1);
-    let x4 = Decimal::from(target.0 + c.b.0);
-    let y4 = Decimal::from(target.1 + c.b.1);
+    let ax = c.a.0 as f64;
+    let ay = c.a.1 as f64;
 
-    let denom = ((x1 - x2) * (y3 - y4)) - ((y1 - y2) * (x3 - x4));
+    let bx = c.b.0 as f64;
+    let by = c.b.1 as f64;
 
-    let ix =
-        ((((x1 * y2) - (y1 * x2)) * (x3 - x4)) - ((x1 - x2) * ((x3 * y4) - (y3 * x4)))) / denom;
-    let iy =
-        ((((x1 * y2) - (y1 * x2)) * (y3 - y4)) - ((y1 - y2) * ((x3 * y4) - (y3 * x4)))) / denom;
+    let tx = (c.target.0 + adjust) as f64;
+    let ty = (c.target.1 + adjust) as f64;
 
-    if ix < dec!(0) || ix.fract() != dec!(0) || iy < dec!(0) || iy.fract() != dec!(0) {
-        return None;
+    let denom = (ax * by) - (ay * bx);
+
+    let apresses = (tx * by - ty * bx) / denom;
+    let bpresses = (ty * ax - tx * ay) / denom;
+
+    if apresses.fract() != 0.0 || bpresses.fract() != 0.0 {
+        None
+    } else {
+        Some((apresses as u64, bpresses as u64))
     }
-
-    let apresses = ix / x2;
-    let bpresses = (x3 - ix) / Decimal::from(c.b.0);
-
-    if apresses.fract() != dec!(0) || bpresses.fract() != dec!(0) {
-        return None;
-    }
-
-    let apresses = apresses.to_u64().unwrap();
-    let bpresses = bpresses.to_u64().unwrap();
-
-    Some((apresses, bpresses))
 }
 
 // Input parsing
@@ -94,27 +71,26 @@ fn get_input() -> Result<Vec<Claw>, Box<dyn Error>> {
 }
 
 fn parse_input(file: &str) -> Vec<Claw> {
-    let re1 = Regex::new("X\\+([0-9]+), Y\\+([0-9]+)").expect("Failed to create regex");
-    let re2 = Regex::new("X=([0-9]+), Y=([0-9]+)").expect("Failed to create regex");
-
-    let get_tuple = |re: &Regex, line| {
-        let captures = re.captures(line).expect("re failed");
-
-        let x = captures.get(1).unwrap().as_str().parse::<u64>().unwrap();
-        let y = captures.get(2).unwrap().as_str().parse::<u64>().unwrap();
-
-        (x, y)
-    };
+    let re = Regex::new(r"\d+").expect("Failed to create regex");
 
     file.split("\n\n")
         .map(|chunk| {
-            let mut lines = chunk.lines();
+            let mut tuples = chunk.lines().map(|line| {
+                let mut captures = re
+                    .find_iter(line)
+                    .map(|c| c.as_str().parse::<u64>().unwrap());
 
-            let a = get_tuple(&re1, lines.next().expect("No line A"));
-            let b = get_tuple(&re1, lines.next().expect("No line B"));
-            let target = get_tuple(&re2, lines.next().expect("No prize line"));
+                (
+                    captures.next().expect("First u64 not present"),
+                    captures.next().expect("Second u64 not present"),
+                )
+            });
 
-            Claw { a, b, target }
+            Claw {
+                a: tuples.next().expect("First tuple not present"),
+                b: tuples.next().expect("Second tuple not present"),
+                target: tuples.next().expect("Third tuple not present"),
+            }
         })
         .collect()
 }
@@ -145,6 +121,6 @@ Prize: X=18641, Y=10279
     fn test1() {
         let input = parse_input(EXAMPLE1);
         assert_eq!(part1(&input), 480);
-        assert_eq!(part2(&input), 0 /* TODO */);
+        assert_eq!(part2(&input), 875318608908);
     }
 }
