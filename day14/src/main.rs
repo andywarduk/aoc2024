@@ -1,4 +1,4 @@
-use std::{collections::HashSet, error::Error, fmt, ops::Range, sync::LazyLock};
+use std::{collections::HashSet, error::Error, ops::Range, sync::LazyLock};
 
 use aoc::input::parse_input_vec;
 use regex::Regex;
@@ -51,7 +51,6 @@ fn part2(mut board: Board) -> u64 {
         secs += 1;
 
         if board.interesting() {
-            println!("{board}");
             break;
         }
     }
@@ -100,32 +99,6 @@ impl Board {
         }
 
         true
-    }
-}
-
-impl fmt::Display for Board {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for y in 0..self.h {
-            for x in 0..self.w {
-                let r = self
-                    .robots
-                    .iter()
-                    .enumerate()
-                    .filter(|(_, r)| r.x == x && r.y == y)
-                    .collect::<Vec<_>>();
-
-                if r.is_empty() {
-                    write!(f, ".")?;
-                } else if r.len() == 1 {
-                    write!(f, "{}", (b'A' + (r[0].0 % 26) as u8) as char)?;
-                } else {
-                    write!(f, "{}", r.len())?;
-                }
-            }
-            writeln!(f)?;
-        }
-
-        Ok(())
     }
 }
 
