@@ -164,6 +164,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "day14vis"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+ "regex",
+]
+
+[[package]]
 name = "gif"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
