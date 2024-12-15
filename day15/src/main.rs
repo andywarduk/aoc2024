@@ -17,24 +17,14 @@ fn part1(input: &str) -> u64 {
     let (mut map, moves) = parse_input(input, false);
 
     make_moves(&mut map, moves);
-
-    map.items
-        .iter()
-        .filter(|&(_, i)| *i == Item::Box)
-        .map(|(&(x, y), _)| (100 * y) + x)
-        .sum::<usize>() as u64
+    calc_gps(&map, Item::Box)
 }
 
 fn part2(input: &str) -> u64 {
     let (mut map, moves) = parse_input(input, true);
 
     make_moves(&mut map, moves);
-
-    map.items
-        .iter()
-        .filter(|&(_, i)| *i == Item::BoxL)
-        .map(|(&(x, y), _)| (100 * y) + x)
-        .sum::<usize>() as u64
+    calc_gps(&map, Item::BoxL)
 }
 
 fn make_moves(map: &mut Map, moves: Vec<Move>) {
@@ -110,9 +100,17 @@ fn apply_moves(map: &mut Map, moves: Vec<(Coord, Coord)>) {
     }
 }
 
+fn calc_gps(map: &Map, item: Item) -> u64 {
+    map.items
+        .iter()
+        .filter(|&(_, i)| *i == item)
+        .map(|(&(x, y), _)| (100 * y) + x)
+        .sum::<usize>() as u64
+}
+
 type Coord = (usize, usize);
 
-#[derive(Clone, PartialEq)]
+#[derive(PartialEq)]
 enum Item {
     Wall,
     Box,
@@ -120,42 +118,12 @@ enum Item {
     BoxR,
 }
 
-#[derive(Clone)]
 struct Map {
-    w: usize,
-    h: usize,
     items: HashMap<Coord, Item>,
     robot: Coord,
 }
 
-impl std::fmt::Display for Map {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for y in 0..self.h {
-            for x in 0..self.w {
-                match self.items.get(&(x, y)) {
-                    Some(item) => match item {
-                        Item::Wall => write!(f, "#")?,
-                        Item::Box => write!(f, "O")?,
-                        Item::BoxL => write!(f, "[")?,
-                        Item::BoxR => write!(f, "]")?,
-                    },
-                    None => {
-                        if (x, y) == self.robot {
-                            write!(f, "@")?;
-                        } else {
-                            write!(f, ".")?;
-                        }
-                    }
-                }
-            }
-            writeln!(f)?;
-        }
-
-        Ok(())
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
+#[derive(PartialEq)]
 enum Move {
     N,
     E,
@@ -181,22 +149,10 @@ fn parse_input(input: &str, double: bool) -> (Map, Vec<Move>) {
 
     let map = sections.next().unwrap();
 
-    let mut w: usize = 0;
-    let mut h: usize = 0;
     let mut items = HashMap::new();
     let mut robot = (0, 0);
 
     map.lines().enumerate().for_each(|(y, l)| {
-        if y == 0 {
-            if double {
-                w = l.len() * 2;
-            } else {
-                w = l.len();
-            }
-        }
-
-        h += 1;
-
         l.chars().enumerate().for_each(|(x, c)| match c {
             '#' => {
                 if double {
@@ -228,7 +184,7 @@ fn parse_input(input: &str, double: bool) -> (Map, Vec<Move>) {
         })
     });
 
-    let map = Map { w, h, items, robot };
+    let map = Map { items, robot };
 
     let moves = sections
         .next()
