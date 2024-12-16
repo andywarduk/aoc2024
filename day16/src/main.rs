@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     collections::{HashMap, HashSet, VecDeque},
     error::Error,
 };
@@ -19,12 +20,20 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn part2(graph: &Graph, best_routes: &[Vec<usize>]) -> u64 {
+    // Build hashset of all coordinates in best paths
     let coords = best_routes
         .iter()
         .flat_map(|r| r.iter().flat_map(|e| graph.edges[*e].path.iter().copied()))
         .collect::<HashSet<Coord>>();
 
     coords.len() as u64
+}
+
+struct Work {
+    node: usize,
+    dir: Dir,
+    score: u64,
+    route: Vec<usize>,
 }
 
 fn walk(graph: &Graph) -> (u64, Vec<Vec<usize>>) {
@@ -35,6 +44,7 @@ fn walk(graph: &Graph) -> (u64, Vec<Vec<usize>>) {
 
     let mut workq = VecDeque::new();
 
+    // Add start point to work queue
     workq.push_back(Work {
         node: graph.start,
         dir: Dir::E,
@@ -42,47 +52,69 @@ fn walk(graph: &Graph) -> (u64, Vec<Vec<usize>>) {
         route: Vec::new(),
     });
 
+    // Process work queue
     while let Some(work) = workq.pop_front() {
         if work.node == graph.end {
-            if work.score < best_score {
-                best_score = work.score;
-                best_routes = vec![work.route];
-            } else if work.score == best_score {
-                best_routes.push(work.route);
+            // At the end node - compare best score
+            match work.score.cmp(&best_score) {
+                Ordering::Less => {
+                    // New best score
+                    best_score = work.score;
+                    best_routes = vec![work.route];
+                }
+                Ordering::Equal => {
+                    // Equal best score
+                    best_routes.push(work.route);
+                }
+                Ordering::Greater => (),
             }
+
             continue;
         }
 
+        // Visited from this direction before?
         if let Some(score) = scores.get_mut(&(work.node, work.dir)) {
+            // Yes - is the score worse?
             if *score < work.score {
+                // Yes - ignore
                 continue;
             }
+
+            // No - new best score for this node from this direction
             *score = work.score;
         } else {
+            // First time visited in this direction
             scores.insert((work.node, work.dir), work.score);
         }
 
+        // Iterate node edges
         for en in graph.nodes[work.node].edges.iter() {
             let edge = &graph.edges[*en];
 
+            // Don't double back
             if work.dir.opposite() == edge.indir {
                 continue;
             }
 
+            // Calculate new score
             let mut score = work.score + edge.score;
 
             if work.dir != edge.indir {
+                // Turn needed to enter the edge
                 score += 1000;
             }
 
+            // Check current score is not more than the best score
             if score > best_score {
                 continue;
             }
 
+            // Build new route
             let mut new_route = work.route.clone();
 
             new_route.push(*en);
 
+            // Add work queue element
             workq.push_back(Work {
                 node: edge.tonode,
                 dir: edge.outdir,
@@ -95,11 +127,11 @@ fn walk(graph: &Graph) -> (u64, Vec<Vec<usize>>) {
     (best_score, best_routes)
 }
 
-struct Work {
-    node: usize,
-    dir: Dir,
-    score: u64,
-    route: Vec<usize>,
+struct Graph {
+    start: usize,
+    end: usize,
+    nodes: Vec<Node>,
+    edges: Vec<Edge>,
 }
 
 struct Node {
@@ -113,13 +145,6 @@ struct Edge {
     outdir: Dir,
     score: u64,
     path: Vec<Coord>,
-}
-
-struct Graph {
-    start: usize,
-    end: usize,
-    nodes: Vec<Node>,
-    edges: Vec<Edge>,
 }
 
 fn build_graph(input: &[InputEnt]) -> Graph {
@@ -159,12 +184,17 @@ fn build_graph(input: &[InputEnt]) -> Graph {
     for (y, l) in input.iter().enumerate() {
         for (x, t) in l.iter().enumerate() {
             if *t == MapTile::Wall {
+                // Skip wall tiles
                 continue;
             }
 
+            // Build position tuple
             let pos = (x, y);
+
+            // Get directions from this tile
             let dirs = dirs(input, pos, None);
 
+            // Is a node if more than 2 outward directions or start or end position
             if dirs.len() > 2 || pos == spos || pos == epos {
                 nodes.push(Node {
                     pos,
@@ -174,6 +204,7 @@ fn build_graph(input: &[InputEnt]) -> Graph {
         }
     }
 
+    // Build coordinate to node map
     let node_map = nodes
         .iter()
         .enumerate()
@@ -184,29 +215,36 @@ fn build_graph(input: &[InputEnt]) -> Graph {
     let mut edges = Vec::new();
 
     for n in nodes.iter_mut() {
+        // Loop outward directions from this node
         for (dir, mut next) in dirs(input, n.pos, None) {
-            let mut cdir = dir;
+            let mut cur_dir = dir;
             let mut path = Vec::new();
             let mut score = 1;
 
+            // Add node to path
             path.push(n.pos);
 
             loop {
+                // Add next position to the path
                 path.push(next);
 
-                let dirs = dirs(input, next, Some(cdir.opposite()));
+                // Get next direction and position from current without backtracking
+                let dirs = dirs(input, next, Some(cur_dir.opposite()));
 
                 if dirs.is_empty() {
+                    // Dead end
                     break;
                 }
 
+                // Arrived at a node?
                 if let Some(n2) = node_map.get(&next) {
+                    // Yes - add the edge
                     n.edges.push(edges.len());
 
                     edges.push(Edge {
                         tonode: *n2,
                         indir: dir,
-                        outdir: cdir,
+                        outdir: cur_dir,
                         score,
                         path,
                     });
@@ -214,17 +252,21 @@ fn build_graph(input: &[InputEnt]) -> Graph {
                     break;
                 }
 
-                if dirs[0].0 != cdir {
+                // Update edge score and direction
+                score += 1;
+
+                if dirs[0].0 != cur_dir {
                     score += 1000;
-                    cdir = dirs[0].0;
+                    cur_dir = dirs[0].0;
                 }
 
+                // Set new position
                 next = dirs[0].1;
-                score += 1;
             }
         }
     }
 
+    // Get start and end nodes
     let start = *node_map.get(&spos).unwrap();
     let end = *node_map.get(&epos).unwrap();
 
@@ -247,6 +289,7 @@ enum Dir {
 }
 
 impl Dir {
+    /// Returns the opposite direction
     fn opposite(&self) -> Self {
         match self {
             Dir::N => Dir::S,
