@@ -1,6 +1,6 @@
 use std::{
     cmp::Ordering,
-    collections::{HashMap, VecDeque},
+    collections::{BinaryHeap, HashMap},
     error::Error,
 };
 
@@ -16,11 +16,28 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+#[derive(PartialEq, Eq)]
 struct Work {
     node: usize,
     dir: Dir,
     score: u64,
+    dist: usize,
     route: Vec<usize>,
+}
+
+impl Ord for Work {
+    fn cmp(&self, other: &Self) -> Ordering {
+        other
+            .score
+            .cmp(&self.score)
+            .then_with(|| self.dist.cmp(&other.dist))
+    }
+}
+
+impl PartialOrd for Work {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 const SCALE: usize = 4;
@@ -31,18 +48,19 @@ fn walk(graph: &Graph) -> Vec<Vec<usize>> {
 
     let mut scores = HashMap::new();
 
-    let mut workq = VecDeque::new();
+    let mut workq = BinaryHeap::new();
 
     // Add start point to work queue
-    workq.push_back(Work {
+    workq.push(Work {
         node: graph.start,
         dir: Dir::E,
         score: 0,
+        dist: graph.nodes[graph.start].dist,
         route: Vec::new(),
     });
 
     // Process work queue
-    while let Some(work) = workq.pop_front() {
+    while let Some(work) = workq.pop() {
         if work.node == graph.end {
             // At the end node - compare best score
             match work.score.cmp(&best_score) {
@@ -104,10 +122,11 @@ fn walk(graph: &Graph) -> Vec<Vec<usize>> {
             new_route.push(*en);
 
             // Add work queue element
-            workq.push_back(Work {
+            workq.push(Work {
                 node: edge.tonode,
                 dir: edge.outdir,
                 score,
+                dist: graph.nodes[work.node].dist,
                 route: new_route,
             });
         }
@@ -204,6 +223,7 @@ struct Graph {
 
 struct Node {
     pos: Coord,
+    dist: usize,
     edges: Vec<usize>,
 }
 
@@ -249,6 +269,8 @@ fn build_graph(input: &[InputEnt]) -> Graph {
     // Find nodes
     let mut nodes = Vec::new();
 
+    let dist = |pos: Coord| -> usize { pos.0.abs_diff(epos.0) + pos.1.abs_diff(epos.1) };
+
     for (y, l) in input.iter().enumerate() {
         for (x, t) in l.iter().enumerate() {
             if *t == MapTile::Wall {
@@ -266,6 +288,7 @@ fn build_graph(input: &[InputEnt]) -> Graph {
             if dirs.len() > 2 || pos == spos || pos == epos {
                 nodes.push(Node {
                     pos,
+                    dist: dist(pos),
                     edges: Vec::new(),
                 });
             }
