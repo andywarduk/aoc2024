@@ -10,8 +10,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Get input
     let input = parse_input_vec(16, input_transform)?;
     let graph = build_graph(&input);
-    let best_routes = walk(&graph);
-    draw_best("vis/day16.gif", &input, &graph, &best_routes)?;
+    walk(&input, &graph, "vis/day16.gif")?;
 
     Ok(())
 }
@@ -30,7 +29,7 @@ impl Ord for Work {
         other
             .score
             .cmp(&self.score)
-            .then_with(|| self.dist.cmp(&other.dist))
+            .then_with(|| other.dist.cmp(&self.dist))
     }
 }
 
@@ -42,7 +41,29 @@ impl PartialOrd for Work {
 
 const SCALE: usize = 4;
 
-fn walk(graph: &Graph) -> Vec<Vec<usize>> {
+fn walk(input: &[InputEnt], graph: &Graph, file: &str) -> Result<(), Box<dyn Error>> {
+    // Build palette
+    let mut palette = vec![[0, 0, 0], [128, 128, 255], [80, 80, 0], [255, 0, 0], [
+        0, 255, 0,
+    ]];
+
+    for i in 0..25 {
+        let c = 255 - (i * 8);
+        palette.push([c, c, c]);
+    }
+
+    // Create GIF
+    let mut gif = Gif::new(
+        file,
+        &palette,
+        graph.maxx as u16,
+        graph.maxy as u16,
+        SCALE as u16,
+        SCALE as u16,
+    )?;
+
+    let mut frameno = 0;
+
     let mut best_score = u64::MAX;
     let mut best_routes = Vec::new();
 
@@ -130,13 +151,52 @@ fn walk(graph: &Graph) -> Vec<Vec<usize>> {
                 route: new_route,
             });
         }
+
+        frameno += 1;
+        if frameno % 12 == 0 {
+            draw_workq(&mut gif, input, graph, &workq)?;
+        }
     }
 
-    best_routes
+    draw_best(&mut gif, input, graph, &best_routes)?;
+
+    gif.delay(1000)?;
+
+    Ok(())
+}
+
+fn draw_workq(
+    gif: &mut Gif,
+    input: &[Vec<MapTile>],
+    graph: &Graph,
+    workq: &BinaryHeap<Work>,
+) -> Result<(), Box<dyn Error>> {
+    let mut frame = gif.empty_frame();
+
+    // Draw map
+    draw_map(&mut frame, input, graph);
+
+    let draw = workq.len().min(25);
+
+    for (i, work) in workq.iter().enumerate().take(draw).rev() {
+        for en in &work.route {
+            let edge = &graph.edges[*en];
+
+            for &(x, y) in &edge.path {
+                frame[y][x] = (i + 5) as u8;
+            }
+        }
+    }
+
+    draw_startend(&mut frame, graph);
+
+    gif.draw_frame(frame, 2)?;
+
+    Ok(())
 }
 
 fn draw_best(
-    file: &str,
+    gif: &mut Gif,
     input: &[Vec<MapTile>],
     graph: &Graph,
     best: &Vec<Vec<usize>>,
@@ -152,35 +212,29 @@ fn draw_best(
         }
     }
 
-    // Build palette
-    let mut palette = vec![[0, 0, 0], [128, 128, 255], [80, 80, 0], [0, 255, 0], [
-        255, 0, 0,
-    ]];
-
-    let col_start = palette.len();
-
-    let overlap = counts.values().copied().max().unwrap();
-
-    let range = 128 / overlap;
-
-    for i in 0..=overlap {
-        let c = (128 + (i * range)) as u8;
-        palette.push([c, c, c]);
-    }
-
-    // Create GIF
-    let mut gif = Gif::new(
-        file,
-        &palette,
-        graph.maxx as u16,
-        graph.maxy as u16,
-        SCALE as u16,
-        SCALE as u16,
-    )?;
+    let max_count = counts.values().copied().max().unwrap();
+    let col_step = 12 / max_count;
 
     // Get empty frame
     let mut frame = gif.empty_frame();
 
+    // Draw map
+    draw_map(&mut frame, input, graph);
+
+    // Draw best paths
+    for ((x, y), c) in counts {
+        frame[y][x] = (((max_count - c) * col_step) + 5) as u8;
+    }
+
+    draw_startend(&mut frame, graph);
+
+    // Output frame
+    gif.draw_frame(frame, 2)?;
+
+    Ok(())
+}
+
+fn draw_map(frame: &mut [Vec<u8>], input: &[InputEnt], graph: &Graph) {
     // Draw walls
     for (y, l) in input.iter().enumerate() {
         for (x, t) in l.iter().enumerate() {
@@ -194,22 +248,14 @@ fn draw_best(
     for n in &graph.nodes {
         frame[n.pos.1][n.pos.0] = 2;
     }
+}
 
-    // Draw best paths
-    for ((x, y), c) in counts {
-        frame[y][x] = (c + col_start) as u8;
-    }
-
+fn draw_startend(frame: &mut [Vec<u8>], graph: &Graph) {
     let s = &graph.nodes[graph.start];
     frame[s.pos.1][s.pos.0] = 3;
 
     let e = &graph.nodes[graph.end];
     frame[e.pos.1][e.pos.0] = 4;
-
-    // Output frame
-    gif.draw_frame(frame, 2)?;
-
-    Ok(())
 }
 
 struct Graph {

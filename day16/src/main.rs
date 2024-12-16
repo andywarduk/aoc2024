@@ -43,7 +43,7 @@ impl Ord for Work {
         other
             .score
             .cmp(&self.score)
-            .then_with(|| self.dist.cmp(&other.dist))
+            .then_with(|| other.dist.cmp(&self.dist))
     }
 }
 
