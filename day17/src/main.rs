@@ -1,4 +1,4 @@
-use std::{collections::HashSet, error::Error};
+use std::error::Error;
 
 use aoc::input::read_input_file;
 use device::{Device, Reg};
@@ -47,29 +47,20 @@ fn part2(program: &[u8]) -> u64 {
     assert!(xors.len() == 2);
 
     // Build valid answers
-    let mut answers: HashSet<u64> = HashSet::default();
-    answers.insert(0);
+    let mut answer = 0;
 
     for &num in program.iter().rev() {
-        let mut new_answers = HashSet::default();
+        for i in 0..8 {
+            let next_answer = (answer << 3) + i;
+            let partial = (next_answer % 8) ^ xors[0];
+            let out = (((partial ^ (next_answer >> partial)) ^ xors[1]) % 8) as u8;
 
-        for answer in answers {
-            for i in 0..8 {
-                let new_answer = (answer << 3) + i;
-                let partial = (new_answer % 8) ^ xors[0];
-                let out = (((partial ^ (new_answer >> partial)) ^ xors[1]) % 8) as u8;
-
-                if out == num {
-                    new_answers.insert(new_answer);
-                }
+            if out == num {
+                answer = next_answer;
+                break;
             }
         }
-
-        answers = new_answers;
     }
-
-    // Get minimum answer
-    let answer = answers.into_iter().min().unwrap();
 
     // Test the answer
     let mut device = Device::new().reg(Reg::A, answer).program(program);
