@@ -1,20 +1,20 @@
 type RegType = u64;
 
 #[derive(Debug)]
-pub struct Device {
+pub struct Device<'a> {
     reg: [RegType; 3],
     pc: usize,
-    program: Vec<u8>,
+    program: Option<&'a [u8]>,
     out: Vec<u8>,
     debug: bool,
 }
 
-impl Device {
+impl<'a> Device<'a> {
     pub fn new() -> Self {
         Self {
             reg: [0; 3],
             pc: 0,
-            program: Vec::new(),
+            program: None,
             out: Vec::new(),
             debug: false,
         }
@@ -25,8 +25,8 @@ impl Device {
         self
     }
 
-    pub fn program(mut self, program: Vec<u8>) -> Self {
-        self.program = program;
+    pub fn program(mut self, program: &'a [u8]) -> Self {
+        self.program = Some(program);
         self
     }
 
@@ -46,111 +46,113 @@ impl Device {
     }
 
     pub fn run(&mut self) -> bool {
-        while self.pc < self.program.len() {
-            if self.debug {
-                print!("({}) ", self.pc);
-            };
+        if let Some(program) = self.program {
+            while self.pc < program.len() {
+                if self.debug {
+                    print!("({}) ", self.pc);
+                };
 
-            let op = self.program[self.pc];
-            let operand_val = self.program[self.pc + 1];
+                let op = program[self.pc];
+                let operand_val = program[self.pc + 1];
 
-            self.pc += 2;
+                self.pc += 2;
 
-            match op {
-                0 => {
-                    // adv
-                    let operand = Operand::from_u8(operand_val);
+                match op {
+                    0 => {
+                        // adv
+                        let operand = Operand::from_u8(operand_val);
 
-                    if self.debug {
-                        print!("adv - a /= 2^{}", operand.debug(self));
-                    };
-
-                    self.reg[Reg::A as usize] /= (2 as RegType).pow(operand.value(self) as u32);
-                }
-                1 => {
-                    // bxl
-                    if self.debug {
-                        print!("bxl - b ^= {}", operand_val);
-                    };
-
-                    self.reg[Reg::B as usize] ^= operand_val as RegType;
-                }
-                2 => {
-                    // bst
-                    let operand = Operand::from_u8(operand_val);
-
-                    if self.debug {
-                        print!("bst - b = b({}) % 8", self.reg[Reg::B as usize]);
-                    };
-
-                    self.reg[Reg::B as usize] = operand.value(self) % 8;
-                }
-                3 => {
-                    // jnz
-                    let operand = Operand::from_u8(operand_val);
-
-                    if self.debug {
-                        print!("jnz - a={}", self.reg[Reg::A as usize]);
-                    };
-
-                    if self.reg[Reg::A as usize] != 0 {
                         if self.debug {
-                            print!(" - jump to {}", operand.debug(self));
-                        }
+                            print!("adv - a /= 2^{}", operand.debug(self));
+                        };
 
-                        self.pc = operand.value(self) as usize;
-                    } else if self.debug {
-                        print!(" - no jump");
+                        self.reg[Reg::A as usize] /= (2 as RegType).pow(operand.value(self) as u32);
                     }
+                    1 => {
+                        // bxl
+                        if self.debug {
+                            print!("bxl - b ^= {}", operand_val);
+                        };
+
+                        self.reg[Reg::B as usize] ^= operand_val as RegType;
+                    }
+                    2 => {
+                        // bst
+                        let operand = Operand::from_u8(operand_val);
+
+                        if self.debug {
+                            print!("bst - b = b({}) % 8", self.reg[Reg::B as usize]);
+                        };
+
+                        self.reg[Reg::B as usize] = operand.value(self) % 8;
+                    }
+                    3 => {
+                        // jnz
+                        let operand = Operand::from_u8(operand_val);
+
+                        if self.debug {
+                            print!("jnz - a={}", self.reg[Reg::A as usize]);
+                        };
+
+                        if self.reg[Reg::A as usize] != 0 {
+                            if self.debug {
+                                print!(" - jump to {}", operand.debug(self));
+                            }
+
+                            self.pc = operand.value(self) as usize;
+                        } else if self.debug {
+                            print!(" - no jump");
+                        }
+                    }
+                    4 => {
+                        // bxc
+                        if self.debug {
+                            print!("bxc - b ^= c({})", self.reg[Reg::C as usize]);
+                        };
+
+                        self.reg[Reg::B as usize] ^= self.reg[Reg::C as usize];
+                    }
+                    5 => {
+                        // out
+                        let operand = Operand::from_u8(operand_val);
+
+                        if self.debug {
+                            print!("out - {}", operand.debug(self));
+                        };
+
+                        self.out.push((operand.value(self) % 8) as u8);
+                    }
+                    6 => {
+                        // bdv
+                        let operand = Operand::from_u8(operand_val);
+
+                        if self.debug {
+                            print!("bdv - b = a / 2^{}", operand.debug(self));
+                        };
+
+                        self.reg[Reg::B as usize] = self.reg[Reg::A as usize]
+                            / (2 as RegType).pow(operand.value(self) as u32);
+                    }
+                    7 => {
+                        // cdv
+                        let operand = Operand::from_u8(operand_val);
+
+                        if self.debug {
+                            print!("cdv - c = a / 2^{}", operand.debug(self));
+                        };
+
+                        self.reg[2] = self.reg[Reg::A as usize]
+                            / (2 as RegType).pow(operand.value(self) as u32);
+                    }
+                    _ => panic!("Invalid opcode"),
                 }
-                4 => {
-                    // bxc
-                    if self.debug {
-                        print!("bxc - b ^= c({})", self.reg[Reg::C as usize]);
-                    };
 
-                    self.reg[Reg::B as usize] ^= self.reg[Reg::C as usize];
+                if self.debug {
+                    println!(
+                        "\na={:#o} b={:#o} c={:#o}",
+                        self.reg[0], self.reg[1], self.reg[2]
+                    );
                 }
-                5 => {
-                    // out
-                    let operand = Operand::from_u8(operand_val);
-
-                    if self.debug {
-                        print!("out - {}", operand.debug(self));
-                    };
-
-                    self.out.push((operand.value(self) % 8) as u8);
-                }
-                6 => {
-                    // bdv
-                    let operand = Operand::from_u8(operand_val);
-
-                    if self.debug {
-                        print!("bdv - b = a / 2^{}", operand.debug(self));
-                    };
-
-                    self.reg[Reg::B as usize] =
-                        self.reg[Reg::A as usize] / (2 as RegType).pow(operand.value(self) as u32);
-                }
-                7 => {
-                    // cdv
-                    let operand = Operand::from_u8(operand_val);
-
-                    if self.debug {
-                        print!("cdv - c = a / 2^{}", operand.debug(self));
-                    };
-
-                    self.reg[2] =
-                        self.reg[Reg::A as usize] / (2 as RegType).pow(operand.value(self) as u32);
-                }
-                _ => panic!("Invalid opcode"),
-            }
-
-            if self.debug {
-                println!(
-                    "\na={:#o} b={:#o} c={:#o}",
-                    self.reg[0], self.reg[1], self.reg[2]
-                );
             }
         }
 
