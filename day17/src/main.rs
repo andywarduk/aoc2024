@@ -86,19 +86,26 @@ fn part2(program: &[u8]) -> u64 {
 fn parse_input() -> (u64, Vec<u8>) {
     let input = read_input_file(17).unwrap();
 
+    parse_input_string(&input)
+}
+
+fn parse_input_string(input: &str) -> (u64, Vec<u8>) {
     let prog_re = Regex::new(r"Program: ([\d,]*)").unwrap();
 
-    let instrs = prog_re.captures(&input).unwrap().get(1).unwrap().as_str();
-
-    let instrs = instrs
+    let program = prog_re
+        .captures(input)
+        .unwrap()
+        .get(1)
+        .unwrap()
+        .as_str()
         .split(",")
         .map(|n| n.parse::<u8>().unwrap())
         .collect();
 
     let rega_re = Regex::new(r"Register A: (\d*)").unwrap();
 
-    let rega = rega_re
-        .captures(&input)
+    let reg_a = rega_re
+        .captures(input)
         .unwrap()
         .get(1)
         .unwrap()
@@ -106,7 +113,7 @@ fn parse_input() -> (u64, Vec<u8>) {
         .parse::<u64>()
         .unwrap();
 
-    (rega, instrs)
+    (reg_a, program)
 }
 
 #[cfg(test)]
@@ -179,5 +186,20 @@ mod tests {
         device.run();
 
         assert_eq!(device.get_output(), &vec![4, 6, 3, 5, 6, 3, 5, 2, 1, 0]);
+    }
+
+    const EXAMPLE1: &str = "\
+Register A: 729
+Register B: 0
+Register C: 0
+
+Program: 0,1,5,4,3,0
+";
+
+    #[test]
+    fn test7() {
+        let (rega, program) = parse_input_string(EXAMPLE1);
+
+        assert_eq!("4,6,3,5,6,3,5,2,1,0", part1(rega, &program));
     }
 }

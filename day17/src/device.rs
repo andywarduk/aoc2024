@@ -144,7 +144,7 @@ impl<'a> Device<'a> {
                         self.reg[2] = self.reg[Reg::A as usize]
                             / (2 as RegType).pow(operand.value(self) as u32);
                     }
-                    _ => panic!("Invalid opcode"),
+                    _ => panic!("Invalid opcode {op}"),
                 }
 
                 if self.debug {
