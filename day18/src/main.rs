@@ -70,6 +70,9 @@ fn create_board(input: &[Coord], dim: usize, count: usize) -> Vec<Vec<bool>> {
 }
 
 fn shortest_path(board: &[Vec<bool>], dim: usize) -> Option<usize> {
+    // Set start point
+    let start = (0, 0);
+
     // Set end point
     let end = (dim, dim);
 
@@ -80,8 +83,8 @@ fn shortest_path(board: &[Vec<bool>], dim: usize) -> Option<usize> {
     let mut queue = BinaryHeap::new();
 
     queue.push(Work {
-        coord: (0, 0),
-        dist: dist((0, 0)),
+        coord: start,
+        dist: dist(start),
         steps: 0,
     });
 
@@ -120,7 +123,7 @@ fn shortest_path(board: &[Vec<bool>], dim: usize) -> Option<usize> {
         }
     }
 
-    visited.get(&(dim, dim)).copied()
+    visited.get(&end).copied()
 }
 
 #[derive(PartialEq, Eq)]

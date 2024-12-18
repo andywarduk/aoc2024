@@ -208,6 +208,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "day18"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+]
+
+[[package]]
+name = "day18vis"
+version = "0.1.0"
+dependencies = [
+ "aoc",
+ "hsl",
+]
+
+[[package]]
 name = "gif"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
