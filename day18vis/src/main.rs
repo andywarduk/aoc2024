@@ -12,14 +12,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Get input
     let input = parse_input_vec(18, input_transform)?;
 
-    let last_ok = last_ok(DIM, &input);
+    let last_ok = last_ok(&input);
 
-    draw("vis/day18.gif", &input, DIM, last_ok)?;
+    draw("vis/day18.gif", &input, last_ok)?;
 
     Ok(())
 }
 
-fn last_ok(dim: usize, input: &[Coord]) -> usize {
+fn last_ok(input: &[Coord]) -> usize {
     // Binary chop the list to find the last time a path can be made to the target
     let length = input.len();
     let mut half = length / 2;
@@ -29,10 +29,10 @@ fn last_ok(dim: usize, input: &[Coord]) -> usize {
 
     while lind <= rind {
         // Create board
-        let board = create_board(input, dim, half);
+        let board = create_board(input, half);
 
         // Try to find shortest path
-        if shortest_path(&board, dim).is_some() {
+        if shortest_path(&board).is_some() {
             // Successful
             lind = half + 1;
             last_ok = last_ok.max(half);
@@ -50,7 +50,8 @@ fn last_ok(dim: usize, input: &[Coord]) -> usize {
 
 const COLOURS: usize = 200;
 
-fn draw(file: &str, input: &[Coord], dim: usize, count: usize) -> Result<(), Box<dyn Error>> {
+fn draw(file: &str, input: &[Coord], count: usize) -> Result<(), Box<dyn Error>> {
+    // Build palette
     let mut palette = vec![[0, 0, 0], [196, 0, 0]];
 
     for i in 0..COLOURS {
@@ -65,11 +66,13 @@ fn draw(file: &str, input: &[Coord], dim: usize, count: usize) -> Result<(), Box
         palette.push([c.0, c.1, c.2]);
     }
 
-    let mut gif = Gif::new(file, &palette, (dim + 1) as u16, (dim + 1) as u16, 10, 10)?;
+    // Create GIF
+    let mut gif = Gif::new(file, &palette, (DIM + 1) as u16, (DIM + 1) as u16, 10, 10)?;
 
     // Create board
-    let mut board = vec![vec![0u8; dim + 1]; dim + 1];
+    let mut board = vec![vec![0u8; DIM + 1]; DIM + 1];
 
+    // Function to draw the board
     let draw_board = |frame: &mut Vec<Vec<u8>>, board: &[Vec<u8>]| {
         for (y, l) in board.iter().enumerate() {
             for (x, t) in l.iter().enumerate() {
@@ -84,20 +87,24 @@ fn draw(file: &str, input: &[Coord], dim: usize, count: usize) -> Result<(), Box
         .take(count)
         .enumerate()
         .try_for_each(|(i, &(x, y))| {
+            // Update the board
             board[y][x] = ((i * COLOURS) / count) as u8 + 2;
 
-            let mut frame = gif.empty_frame();
-            draw_board(&mut frame, &board);
-
             if i % 8 == 0 {
+                // Draw the board
+                let mut frame = gif.empty_frame();
+
+                draw_board(&mut frame, &board);
+
                 gif.draw_frame(frame, 2)
             } else {
+                // Skip this frame
                 Ok(())
             }
         })?;
 
     // Get shortest path
-    let path = shortest_path(&board, dim).unwrap();
+    let path = shortest_path(&board).unwrap();
 
     // Animate path
     for i in 0..=path.len() {
@@ -121,9 +128,9 @@ fn draw(file: &str, input: &[Coord], dim: usize, count: usize) -> Result<(), Box
 
 type Coord = (usize, usize);
 
-fn create_board(input: &[Coord], dim: usize, count: usize) -> Vec<Vec<u8>> {
+fn create_board(input: &[Coord], count: usize) -> Vec<Vec<u8>> {
     // Create board
-    let mut board = vec![vec![0u8; dim + 1]; dim + 1];
+    let mut board = vec![vec![0u8; DIM + 1]; DIM + 1];
 
     // Corrupt memory
     input.iter().take(count).for_each(|&(x, y)| {
@@ -133,12 +140,12 @@ fn create_board(input: &[Coord], dim: usize, count: usize) -> Vec<Vec<u8>> {
     board
 }
 
-fn shortest_path(board: &[Vec<u8>], dim: usize) -> Option<Vec<Coord>> {
+fn shortest_path(board: &[Vec<u8>]) -> Option<Vec<Coord>> {
     // Set start point
     let start = (0, 0);
 
     // Set end point
-    let end = (dim, dim);
+    let end = (DIM, DIM);
 
     // Function to calculate manhattan distance from the end point
     let dist = |(x, y)| (end.0 - x) + (end.1 - y);
@@ -180,7 +187,7 @@ fn shortest_path(board: &[Vec<u8>], dim: usize) -> Option<Vec<Coord>> {
             continue;
         }
 
-        for next in pos_from(board, work.coord, dim) {
+        for next in pos_from(board, work.coord) {
             queue.push(Work {
                 coord: next,
                 from: work.coord,
@@ -234,11 +241,11 @@ impl PartialOrd for Work {
 
 const DIRS: [[isize; 2]; 4] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
-fn pos_from(board: &[Vec<u8>], c: Coord, dim: usize) -> impl Iterator<Item = Coord> {
+fn pos_from(board: &[Vec<u8>], c: Coord) -> impl Iterator<Item = Coord> {
     DIRS.into_iter().filter_map(move |[dx, dy]| {
         match c.0.checked_add_signed(dx) {
-            Some(nx) if nx <= dim => match c.1.checked_add_signed(dy) {
-                Some(ny) if ny <= dim => {
+            Some(nx) if nx <= DIM => match c.1.checked_add_signed(dy) {
+                Some(ny) if ny <= DIM => {
                     if board[ny][nx] == 0 {
                         return Some((nx, ny));
                     }
