@@ -1,8 +1,9 @@
 target/
 inputs/
 token.txt
-flamegraph.svg
+flamegraphs/
 perf.data*
 .DS_Store
 *.bak
 .z3-trace
+flamegraph*.svg

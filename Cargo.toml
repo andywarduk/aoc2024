@@ -42,3 +42,8 @@ members = [
 debug = false
 lto = "fat"
 strip = true
+
+[profile.profile]
+inherits = "release"
+debug = true
+lto = "fat"
