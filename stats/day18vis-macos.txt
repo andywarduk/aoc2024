@@ -1,9 +1,101 @@
-        0.90 real         0.65 user         0.09 sys
-             5046272  maximum resident set size
+Shortest path: 141 steps (frame 1)
+New path (frame 5)
+New path (frame 15)
+New path (frame 17)
+New path (frame 38)
+New path (frame 40)
+New path (frame 48)
+New path (frame 60)
+New path (frame 66)
+New path (frame 71)
+New path (frame 87)
+New path (frame 98)
+New path (frame 99)
+New path (frame 100)
+New path (frame 110)
+New path (frame 112)
+New path (frame 116)
+New path (frame 121)
+New path (frame 122)
+New path (frame 128)
+New path (frame 130)
+New path (frame 135)
+New path (frame 139)
+New path (frame 140)
+New path (frame 148)
+New path (frame 150)
+New path (frame 153)
+New path (frame 155)
+New path (frame 158)
+New path (frame 162)
+New path (frame 164)
+New path (frame 166)
+New path (frame 183)
+New path (frame 185)
+New path (frame 194)
+New path (frame 200)
+New path (frame 217)
+Shortest path: 143 steps (frame 218)
+Shortest path: 145 steps (frame 219)
+Shortest path: 147 steps (frame 223)
+New path (frame 225)
+Shortest path: 151 steps (frame 226)
+New path (frame 235)
+Shortest path: 165 steps (frame 241)
+New path (frame 249)
+New path (frame 253)
+Shortest path: 255 steps (frame 256)
+Shortest path: 309 steps (frame 257)
+New path (frame 266)
+New path (frame 278)
+Shortest path: 311 steps (frame 315)
+New path (frame 331)
+Shortest path: 313 steps (frame 349)
+Shortest path: 315 steps (frame 390)
+Shortest path: 317 steps (frame 414)
+Shortest path: 323 steps (frame 416)
+Shortest path: 325 steps (frame 418)
+Shortest path: 327 steps (frame 419)
+New path (frame 423)
+Shortest path: 329 steps (frame 433)
+New path (frame 435)
+New path (frame 439)
+New path (frame 442)
+New path (frame 453)
+New path (frame 454)
+Shortest path: 331 steps (frame 464)
+Shortest path: 335 steps (frame 471)
+New path (frame 493)
+New path (frame 510)
+Shortest path: 339 steps (frame 533)
+New path (frame 538)
+Shortest path: 341 steps (frame 544)
+New path (frame 545)
+Shortest path: 345 steps (frame 548)
+Shortest path: 349 steps (frame 555)
+Shortest path: 351 steps (frame 558)
+New path (frame 561)
+Shortest path: 361 steps (frame 570)
+Shortest path: 373 steps (frame 572)
+Shortest path: 381 steps (frame 574)
+New path (frame 582)
+New path (frame 590)
+Shortest path: 415 steps (frame 596)
+Shortest path: 457 steps (frame 597)
+Shortest path: 459 steps (frame 598)
+New path (frame 602)
+Shortest path: 491 steps (frame 605)
+Shortest path: 511 steps (frame 611)
+Shortest path: 557 steps (frame 612)
+Shortest path: 693 steps (frame 613)
+Shortest path: 697 steps (frame 614)
+Blocker at 46x28
+        5.90 real         5.50 user         0.17 sys
+            11599872  maximum resident set size
                    0  average shared memory size
                    0  average unshared data size
                    0  average unshared stack size
-                 428  page reclaims
+                 828  page reclaims
                    0  page faults
                    0  swaps
                    0  block input operations
@@ -12,10 +104,10 @@
                    0  messages received
                    0  signals received
                    0  voluntary context switches
-                  39  involuntary context switches
-          7195724307  instructions retired
-          2534345353  cycles elapsed
-             4801664  peak memory footprint
+                1758  involuntary context switches
+         49326153347  instructions retired
+         19465077804  cycles elapsed
+             7046144  peak memory footprint
 ------------------------------------------
 Darwin 24.2.0 Darwin Kernel Version 24.2.0: Fri Dec 6 18:51:28 PST 2024; root:xnu-11215.61.5~2/RELEASE_ARM64_T8112 arm64 arm
 rustc 1.85.0-nightly (a2545fd6f 2024-11-28)

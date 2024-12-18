@@ -50,6 +50,7 @@ fn last_ok(input: &[Coord]) -> usize {
 }
 
 const COLOURS: usize = 200;
+const FRAME_SKIP: usize = 4;
 
 fn draw(file: &str, input: &[Coord], count: usize) -> Result<(), Box<dyn Error>> {
     // Build palette
@@ -84,6 +85,9 @@ fn draw(file: &str, input: &[Coord], count: usize) -> Result<(), Box<dyn Error>>
         }
     };
 
+    let mut last_path = Vec::new();
+    let mut shortest = 0;
+
     // Animate board
     input
         .iter()
@@ -93,7 +97,7 @@ fn draw(file: &str, input: &[Coord], count: usize) -> Result<(), Box<dyn Error>>
             // Update the board
             board[y][x] = (((i * COLOURS) / count) + col_start) as u8;
 
-            if i % 4 == 0 {
+            if i % FRAME_SKIP == 0 {
                 // Draw the board
                 let mut frame = gif.empty_frame();
 
@@ -102,11 +106,33 @@ fn draw(file: &str, input: &[Coord], count: usize) -> Result<(), Box<dyn Error>>
                 // Get shortest path
                 let path = shortest_path(&board).unwrap();
 
+                let delay = if path != last_path {
+                    last_path = path.clone();
+
+                    if path.len() != shortest {
+                        println!(
+                            "Shortest path: {} steps (frame {})",
+                            path.len(),
+                            (i / FRAME_SKIP) + 1
+                        );
+
+                        shortest = path.len();
+
+                        10
+                    } else {
+                        println!("New path (frame {})", (i / FRAME_SKIP) + 1);
+
+                        5
+                    }
+                } else {
+                    2
+                };
+
                 for &(x, y) in path.iter() {
                     frame[y][x] = 1;
                 }
 
-                gif.draw_frame(frame, 2)
+                gif.draw_frame(frame, delay)
             } else {
                 // Skip this frame
                 Ok(())
@@ -120,7 +146,6 @@ fn draw(file: &str, input: &[Coord], count: usize) -> Result<(), Box<dyn Error>>
 
     // Get shortest path
     let path = shortest_path(&board).unwrap();
-    println!("Shortest path {} steps", path.len());
 
     for &(x, y) in path.iter() {
         frame[y][x] = 1;
@@ -160,16 +185,19 @@ fn shortest_path(board: &[Vec<u8>]) -> Option<Vec<Coord>> {
     // Set end point
     let end = (DIM, DIM);
 
-    // Function to calculate manhattan distance from the end point
-    let dist = |(x, y)| (end.0 - x) + (end.1 - y);
+    // Function to calculate distance from the end point
+    let dist = |(x, y): Coord| {
+        let dx = end.0 - x;
+        let dy = end.1 - y;
+        let dist = (((dx * dx) + (dy * dy)) as f64).sqrt();
+        (dist * 100.0) as usize
+    };
 
     // initialise work queue
     let mut queue = BinaryHeap::new();
 
     queue.push(Work {
         coord: start,
-        dir: (0, 0),
-        dir_change: false,
         from: start,
         dist: dist(start),
         steps: 0,
@@ -202,11 +230,9 @@ fn shortest_path(board: &[Vec<u8>]) -> Option<Vec<Coord>> {
             continue;
         }
 
-        for (dir, next) in pos_from(board, work.coord) {
+        for next in pos_from(board, work.coord) {
             queue.push(Work {
                 coord: next,
-                dir,
-                dir_change: dir != work.dir,
                 from: work.coord,
                 dist: dist(next),
                 steps: work.steps + 1,
@@ -236,11 +262,9 @@ fn shortest_path(board: &[Vec<u8>]) -> Option<Vec<Coord>> {
     }
 }
 
-#[derive(PartialEq, Eq)]
+#[derive(PartialEq)]
 struct Work {
     coord: Coord,
-    dir: (isize, isize),
-    dir_change: bool,
     from: Coord,
     dist: usize,
     steps: usize,
@@ -248,15 +272,7 @@ struct Work {
 
 impl Ord for Work {
     fn cmp(&self, other: &Self) -> Ordering {
-        other.dist.cmp(&self.dist).then_with(|| {
-            if other.dir_change == self.dir_change {
-                Ordering::Equal
-            } else if self.dir_change {
-                Ordering::Greater
-            } else {
-                Ordering::Less
-            }
-        })
+        other.dist.cmp(&self.dist)
     }
 }
 
@@ -266,15 +282,17 @@ impl PartialOrd for Work {
     }
 }
 
+impl Eq for Work {}
+
 const DIRS: [[isize; 2]; 4] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
-fn pos_from(board: &[Vec<u8>], c: Coord) -> impl Iterator<Item = ((isize, isize), Coord)> {
+fn pos_from(board: &[Vec<u8>], c: Coord) -> impl Iterator<Item = Coord> {
     DIRS.into_iter().filter_map(move |[dx, dy]| {
         match c.0.checked_add_signed(dx) {
             Some(nx) if nx <= DIM => match c.1.checked_add_signed(dy) {
                 Some(ny) if ny <= DIM => {
                     if board[ny][nx] == 0 {
-                        return Some(((dx, dy), (nx, ny)));
+                        return Some((nx, ny));
                     }
                 }
                 _ => (),
