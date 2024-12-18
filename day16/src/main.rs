@@ -217,7 +217,7 @@ fn build_graph(input: &[InputEnt]) -> Graph {
             let dirs = dirs(input, pos, None);
 
             // Is a node if more than 2 outward directions or start or end position
-            if dirs.len() > 2 || pos == spos || pos == epos {
+            if dirs.count() > 2 || pos == spos || pos == epos {
                 nodes.push(Node {
                     pos,
                     dist: dist(pos),
@@ -252,39 +252,39 @@ fn build_graph(input: &[InputEnt]) -> Graph {
                 path.push(next);
 
                 // Get next direction and position from current without backtracking
-                let dirs = dirs(input, next, Some(cur_dir.opposite()));
+                if let Some((next_dir, next_pos)) =
+                    dirs(input, next, Some(cur_dir.opposite())).next()
+                {
+                    // Arrived at a node?
+                    if let Some(n2) = node_map.get(&next) {
+                        // Yes - add the edge
+                        n.edges.push(edges.len());
 
-                if dirs.is_empty() {
+                        edges.push(Edge {
+                            tonode: *n2,
+                            indir: dir,
+                            outdir: cur_dir,
+                            score,
+                            path,
+                        });
+
+                        break;
+                    }
+
+                    // Update edge score and direction
+                    score += 1;
+
+                    if next_dir != cur_dir {
+                        score += 1000;
+                        cur_dir = next_dir;
+                    }
+
+                    // Set new position
+                    next = next_pos;
+                } else {
                     // Dead end
                     break;
                 }
-
-                // Arrived at a node?
-                if let Some(n2) = node_map.get(&next) {
-                    // Yes - add the edge
-                    n.edges.push(edges.len());
-
-                    edges.push(Edge {
-                        tonode: *n2,
-                        indir: dir,
-                        outdir: cur_dir,
-                        score,
-                        path,
-                    });
-
-                    break;
-                }
-
-                // Update edge score and direction
-                score += 1;
-
-                if dirs[0].0 != cur_dir {
-                    score += 1000;
-                    cur_dir = dirs[0].0;
-                }
-
-                // Set new position
-                next = dirs[0].1;
             }
         }
     }
@@ -330,30 +330,23 @@ const DIRS: [(Dir, [isize; 2]); 4] = [
     (Dir::W, [-1, 0]),
 ];
 
-fn dirs(input: &[InputEnt], c: Coord, skip_dir: Option<Dir>) -> Vec<(Dir, Coord)> {
-    DIRS.iter()
-        .filter_map(move |&(mdir, [dx, dy])| match c.0.checked_add_signed(dx) {
-            Some(nx) if nx < input[0].len() => match c.1.checked_add_signed(dy) {
-                Some(ny) if ny < input.len() => {
-                    if input[ny][nx] != MapTile::Wall {
-                        if let Some(skip_dir) = skip_dir {
-                            if mdir == skip_dir {
-                                None
-                            } else {
-                                Some((mdir, (nx, ny)))
-                            }
-                        } else {
-                            Some((mdir, (nx, ny)))
-                        }
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            },
-            _ => None,
-        })
-        .collect()
+fn dirs(input: &[InputEnt], c: Coord, skip_dir: Option<Dir>) -> impl Iterator<Item = (Dir, Coord)> {
+    DIRS.iter().filter_map(move |&(mdir, [dx, dy])| {
+        if let Some(skip_dir) = skip_dir {
+            if mdir == skip_dir {
+                return None;
+            }
+        }
+
+        let nx = (c.0 as isize + dx) as usize;
+        let ny = (c.1 as isize + dy) as usize;
+
+        if input[ny][nx] == MapTile::Wall {
+            return None;
+        }
+
+        Some((mdir, (nx, ny)))
+    })
 }
 
 // Input parsing
