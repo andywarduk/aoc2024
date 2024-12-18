@@ -1,4 +1,5 @@
 use std::{
+    cmp::Ordering,
     collections::{BinaryHeap, HashMap},
     error::Error,
 };
@@ -52,7 +53,9 @@ const COLOURS: usize = 200;
 
 fn draw(file: &str, input: &[Coord], count: usize) -> Result<(), Box<dyn Error>> {
     // Build palette
-    let mut palette = vec![[0, 0, 0], [196, 0, 0]];
+    let mut palette = vec![[0, 0, 0], [196, 0, 0], [255, 255, 255]];
+
+    let col_start = palette.len();
 
     for i in 0..COLOURS {
         let hsl = HSL {
@@ -88,13 +91,20 @@ fn draw(file: &str, input: &[Coord], count: usize) -> Result<(), Box<dyn Error>>
         .enumerate()
         .try_for_each(|(i, &(x, y))| {
             // Update the board
-            board[y][x] = ((i * COLOURS) / count) as u8 + 2;
+            board[y][x] = (((i * COLOURS) / count) + col_start) as u8;
 
-            if i % 8 == 0 {
+            if i % 4 == 0 {
                 // Draw the board
                 let mut frame = gif.empty_frame();
 
                 draw_board(&mut frame, &board);
+
+                // Get shortest path
+                let path = shortest_path(&board).unwrap();
+
+                for &(x, y) in path.iter() {
+                    frame[y][x] = 1;
+                }
 
                 gif.draw_frame(frame, 2)
             } else {
@@ -103,25 +113,28 @@ fn draw(file: &str, input: &[Coord], count: usize) -> Result<(), Box<dyn Error>>
             }
         })?;
 
+    // Draw last frame
+    let mut frame = gif.empty_frame();
+
+    draw_board(&mut frame, &board);
+
     // Get shortest path
     let path = shortest_path(&board).unwrap();
+    println!("Shortest path {} steps", path.len());
 
-    // Animate path
-    for i in 0..=path.len() {
-        let mut frame = gif.empty_frame();
-
-        // Draw board
-        draw_board(&mut frame, &board);
-
-        // Draw path
-        for &(x, y) in path.iter().take(i) {
-            frame[y][x] = 1;
-        }
-
-        gif.draw_frame(frame, 2)?;
+    for &(x, y) in path.iter() {
+        frame[y][x] = 1;
     }
 
-    gif.delay(500)?;
+    let (bx, by) = input[count];
+    println!("Blocker at {bx}x{by}");
+
+    for i in 0..50 {
+        // Draw blocker
+        frame[by][bx] = 1 + (i % 2);
+
+        gif.draw_frame(frame.clone(), 10)?;
+    }
 
     Ok(())
 }
@@ -155,6 +168,8 @@ fn shortest_path(board: &[Vec<u8>]) -> Option<Vec<Coord>> {
 
     queue.push(Work {
         coord: start,
+        dir: (0, 0),
+        dir_change: false,
         from: start,
         dist: dist(start),
         steps: 0,
@@ -187,9 +202,11 @@ fn shortest_path(board: &[Vec<u8>]) -> Option<Vec<Coord>> {
             continue;
         }
 
-        for next in pos_from(board, work.coord) {
+        for (dir, next) in pos_from(board, work.coord) {
             queue.push(Work {
                 coord: next,
+                dir,
+                dir_change: dir != work.dir,
                 from: work.coord,
                 dist: dist(next),
                 steps: work.steps + 1,
@@ -222,32 +239,42 @@ fn shortest_path(board: &[Vec<u8>]) -> Option<Vec<Coord>> {
 #[derive(PartialEq, Eq)]
 struct Work {
     coord: Coord,
+    dir: (isize, isize),
+    dir_change: bool,
     from: Coord,
     dist: usize,
     steps: usize,
 }
 
 impl Ord for Work {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.dist.cmp(&self.dist)
+    fn cmp(&self, other: &Self) -> Ordering {
+        other.dist.cmp(&self.dist).then_with(|| {
+            if other.dir_change == self.dir_change {
+                Ordering::Equal
+            } else if self.dir_change {
+                Ordering::Greater
+            } else {
+                Ordering::Less
+            }
+        })
     }
 }
 
 impl PartialOrd for Work {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
 const DIRS: [[isize; 2]; 4] = [[0, -1], [1, 0], [0, 1], [-1, 0]];
 
-fn pos_from(board: &[Vec<u8>], c: Coord) -> impl Iterator<Item = Coord> {
+fn pos_from(board: &[Vec<u8>], c: Coord) -> impl Iterator<Item = ((isize, isize), Coord)> {
     DIRS.into_iter().filter_map(move |[dx, dy]| {
         match c.0.checked_add_signed(dx) {
             Some(nx) if nx <= DIM => match c.1.checked_add_signed(dy) {
                 Some(ny) if ny <= DIM => {
                     if board[ny][nx] == 0 {
-                        return Some((nx, ny));
+                        return Some(((dx, dy), (nx, ny)));
                     }
                 }
                 _ => (),
