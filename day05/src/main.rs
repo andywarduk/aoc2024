@@ -1,6 +1,7 @@
-use std::{cmp::Ordering, collections::HashSet, error::Error};
+use std::{cmp::Ordering, error::Error};
 
 use aoc::input::read_input_file;
+use fxhash::FxHashSet;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -49,7 +50,7 @@ fn correct_order(print: &[u8], orders: &PageOrder) -> Option<Vec<u8>> {
 
 // Input parsing
 
-type PageOrder = HashSet<[u8; 2]>;
+type PageOrder = FxHashSet<[u8; 2]>;
 
 fn parse_input(input: &str) -> (PageOrder, Vec<Vec<u8>>) {
     let mut sections = input.split("\n\n");

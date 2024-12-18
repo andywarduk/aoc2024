@@ -1,9 +1,7 @@
-use std::{
-    collections::{HashMap, HashSet},
-    error::Error,
-};
+use std::error::Error;
 
 use aoc::input::parse_input_vec;
+use fxhash::{FxHashMap, FxHashSet};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -19,7 +17,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 fn part1(input: &[InputEnt]) -> u64 {
     let positions = get_positions(input);
 
-    let mut intpos = HashSet::new();
+    let mut intpos = FxHashSet::default();
 
     let mut add_pos = |x, y, ox, oy| {
         if x >= 0
@@ -56,7 +54,7 @@ fn part1(input: &[InputEnt]) -> u64 {
 fn part2(input: &[InputEnt]) -> u64 {
     let positions = get_positions(input);
 
-    let mut intpos = HashSet::new();
+    let mut intpos = FxHashSet::default();
 
     let mut add_pos = |x, y, xd, yd| {
         let mut x = x as isize;
@@ -97,8 +95,8 @@ fn input_transform(line: String) -> InputEnt {
     line.chars().collect()
 }
 
-fn get_positions(input: &[InputEnt]) -> HashMap<char, Vec<(usize, usize)>> {
-    let mut positions: HashMap<char, Vec<(usize, usize)>> = HashMap::new();
+fn get_positions(input: &[InputEnt]) -> FxHashMap<char, Vec<(usize, usize)>> {
+    let mut positions: FxHashMap<char, Vec<(usize, usize)>> = FxHashMap::default();
 
     for (y, l) in input.iter().enumerate() {
         for (x, c) in l.iter().enumerate() {

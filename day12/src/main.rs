@@ -1,9 +1,10 @@
 use std::{
-    collections::{BTreeMap, HashSet, VecDeque},
+    collections::{BTreeMap, VecDeque},
     error::Error,
 };
 
 use aoc::input::parse_input_vec;
+use fxhash::FxHashSet;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -36,7 +37,7 @@ struct Shape {
 
 fn get_shapes(input: &[InputEnt]) -> Vec<Shape> {
     let mut shapes = Vec::new();
-    let mut touched: HashSet<Coord> = HashSet::new();
+    let mut touched: FxHashSet<Coord> = FxHashSet::default();
 
     for (y, l) in input.iter().enumerate() {
         (0..l.len()).for_each(|x| {
@@ -64,7 +65,7 @@ fn get_shapes(input: &[InputEnt]) -> Vec<Shape> {
 }
 
 fn perimeter_sides(
-    squares: &HashSet<Coord>,
+    squares: &FxHashSet<Coord>,
     xbounds: &BTreeMap<usize, (usize, usize)>,
     ybounds: &BTreeMap<usize, (usize, usize)>,
 ) -> (u64, u64) {
@@ -145,13 +146,13 @@ fn perimeter_sides(
 }
 
 type ShapeTopology = (
-    HashSet<Coord>,
+    FxHashSet<Coord>,
     BTreeMap<usize, (usize, usize)>,
     BTreeMap<usize, (usize, usize)>,
 );
 
 fn shape_topology(input: &[InputEnt], x: usize, y: usize) -> ShapeTopology {
-    let mut squares = HashSet::new();
+    let mut squares = FxHashSet::default();
     let mut xbounds = BTreeMap::new();
     let mut ybounds = BTreeMap::new();
 

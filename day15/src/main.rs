@@ -1,6 +1,7 @@
-use std::{collections::HashMap, error::Error};
+use std::error::Error;
 
 use aoc::input::read_input_file;
+use fxhash::FxHashMap;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -119,7 +120,7 @@ enum Item {
 }
 
 struct Map {
-    items: HashMap<Coord, Item>,
+    items: FxHashMap<Coord, Item>,
     robot: Coord,
 }
 
@@ -149,7 +150,7 @@ fn parse_input(input: &str, double: bool) -> (Map, Vec<Move>) {
 
     let map = sections.next().unwrap();
 
-    let mut items = HashMap::new();
+    let mut items = FxHashMap::default();
     let mut robot = (0, 0);
 
     map.lines().enumerate().for_each(|(y, l)| {

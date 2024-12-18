@@ -7,3 +7,4 @@ edition = "2024"
 
 [dependencies]
 aoc = { path = "../aoc" }
+fxhash = "0.2.1"

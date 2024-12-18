@@ -1,9 +1,7 @@
-use std::{
-    collections::{HashMap, VecDeque},
-    error::Error,
-};
+use std::{collections::VecDeque, error::Error};
 
 use aoc::input::parse_input_line;
+use fxhash::FxHashMap;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -26,7 +24,7 @@ fn part2(input: &InputEnt) -> u64 {
 
 fn count(input: &InputEnt, iters: u8) -> u64 {
     let mut work = VecDeque::new();
-    let mut note = HashMap::new();
+    let mut note = FxHashMap::default();
 
     // Build initial work queue
     (0..input.len()).for_each(|i| {

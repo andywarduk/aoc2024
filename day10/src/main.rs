@@ -1,6 +1,7 @@
-use std::{collections::HashSet, error::Error};
+use std::error::Error;
 
 use aoc::input::parse_input_vec;
+use fxhash::FxHashSet;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -18,7 +19,7 @@ type Coord = (usize, usize);
 fn part1(input: &[InputEnt]) -> u64 {
     heads(input)
         .map(|(x, y)| {
-            let mut dests = HashSet::new();
+            let mut dests = FxHashSet::default();
 
             walk1(input, x, y, 1, &mut dests);
 
@@ -27,7 +28,7 @@ fn part1(input: &[InputEnt]) -> u64 {
         .sum()
 }
 
-fn walk1(input: &[InputEnt], x: usize, y: usize, h: u8, dests: &mut HashSet<Coord>) {
+fn walk1(input: &[InputEnt], x: usize, y: usize, h: u8, dests: &mut FxHashSet<Coord>) {
     pos_from(input, x, y, h).for_each(|(nx, ny)| {
         if h == 9 {
             dests.insert((nx, ny));

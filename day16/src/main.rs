@@ -1,10 +1,7 @@
-use std::{
-    cmp::Ordering,
-    collections::{BinaryHeap, HashMap, HashSet},
-    error::Error,
-};
+use std::{cmp::Ordering, collections::BinaryHeap, error::Error};
 
 use aoc::input::parse_input_vec;
+use fxhash::{FxHashMap, FxHashSet};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -24,7 +21,7 @@ fn part2(graph: &Graph, best_routes: &[Vec<usize>]) -> u64 {
     let coords = best_routes
         .iter()
         .flat_map(|r| r.iter().flat_map(|e| graph.edges[*e].path.iter().copied()))
-        .collect::<HashSet<Coord>>();
+        .collect::<FxHashSet<Coord>>();
 
     coords.len() as u64
 }
@@ -57,7 +54,7 @@ fn walk(graph: &Graph) -> (u64, Vec<Vec<usize>>) {
     let mut best_score = u64::MAX;
     let mut best_routes = Vec::new();
 
-    let mut scores = HashMap::new();
+    let mut scores = FxHashMap::default();
 
     let mut workq = BinaryHeap::new();
 
@@ -232,7 +229,7 @@ fn build_graph(input: &[InputEnt]) -> Graph {
         .iter()
         .enumerate()
         .map(|(i, n)| (n.pos, i))
-        .collect::<HashMap<_, _>>();
+        .collect::<FxHashMap<_, _>>();
 
     // Build edges
     let mut edges = Vec::new();

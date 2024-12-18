@@ -1,9 +1,7 @@
-use std::{
-    collections::{BinaryHeap, HashMap},
-    error::Error,
-};
+use std::{collections::BinaryHeap, error::Error};
 
 use aoc::input::parse_input_vec;
+use fxhash::FxHashMap;
 
 const DIM: usize = 70;
 
@@ -89,7 +87,7 @@ fn shortest_path(board: &[Vec<bool>], dim: usize) -> Option<usize> {
     });
 
     // Create visited hashmap
-    let mut visited = HashMap::new();
+    let mut visited = FxHashMap::default();
 
     // Process work queue
     while let Some(work) = queue.pop() {

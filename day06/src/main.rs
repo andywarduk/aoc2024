@@ -1,6 +1,7 @@
-use std::{collections::HashSet, error::Error};
+use std::error::Error;
 
 use aoc::input::parse_input_vec;
+use fxhash::FxHashSet;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -30,13 +31,13 @@ fn part2(input: &[BoardLine]) -> u64 {
         .count() as u64
 }
 
-fn walk_path(input: &[BoardLine], mut gx: usize, mut gy: usize) -> HashSet<(usize, usize)> {
+fn walk_path(input: &[BoardLine], mut gx: usize, mut gy: usize) -> FxHashSet<(usize, usize)> {
     let boardx = input[0].len();
     let boardy = input.len();
 
     let mut dir = Dir::N;
 
-    let mut visited = HashSet::new();
+    let mut visited = FxHashSet::default();
     visited.insert((gx, gy));
 
     while let Some((nx, ny)) = dir.next_pos(gx, gy, boardx, boardy) {
@@ -57,7 +58,7 @@ fn loop_check(input: &[BoardLine], mut gx: usize, mut gy: usize, bx: usize, by: 
 
     let mut dir = Dir::N;
 
-    let mut turns = HashSet::new();
+    let mut turns = FxHashSet::default();
 
     while let Some((nx, ny)) = dir.next_pos(gx, gy, boardx, boardy) {
         if matches!(input[ny][nx], Space::Blocked) || (nx, ny) == (bx, by) {

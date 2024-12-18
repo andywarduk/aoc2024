@@ -1,6 +1,7 @@
-use std::{collections::HashSet, error::Error, ops::Range, sync::LazyLock};
+use std::{error::Error, ops::Range, sync::LazyLock};
 
 use aoc::input::parse_input_vec;
+use fxhash::FxHashSet;
 use regex::Regex;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -90,7 +91,7 @@ impl Board {
 
     fn interesting(&self) -> bool {
         // No overlaps
-        let mut set = HashSet::new();
+        let mut set = FxHashSet::default();
 
         for r in &self.robots {
             if !set.insert((r.x, r.y)) {
