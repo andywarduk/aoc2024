@@ -47,4 +47,5 @@ strip = true
 [profile.profile]
 inherits = "release"
 debug = true
-lto = "fat"
+lto = false
+strip = false

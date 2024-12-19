@@ -16,6 +16,9 @@ mkdir -p flamegraphs >/dev/null 2>&1
 
 file=flamegraphs/day$daypad-dbg.svg
 
-cargo flamegraph --root --dev --bin day$daypad --output "$file"
+cargo flamegraph -F 3997 --root --dev --bin day$daypad --output "$file"
 
-open "$file"
+if [ $? -eq 0 ]
+then
+	open "$file"
+fi
