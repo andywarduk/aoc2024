@@ -8,78 +8,115 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input = parse_input_vec(6, input_transform)?;
 
     // Run parts
-    println!("Part 1: {}", part1(&input));
-    println!("Part 2: {}", part2(&input));
+    let (p1, p2) = run_parts(&input);
+
+    println!("Part 1: {}", p1);
+    println!("Part 2: {}", p2);
 
     Ok(())
 }
 
-fn part1(input: &[BoardLine]) -> u64 {
-    let (gx, gy) = guard_pos(input);
+fn run_parts(input: &[BoardLine]) -> (u64, u64) {
+    // Get board dimensions
+    let board_dim = Coord {
+        x: input[0].len(),
+        y: input.len(),
+    };
 
-    walk_path(input, gx, gy).len() as u64
+    // Get guard position
+    let guard_pos = guard_pos(input);
+
+    // Walk guard's path
+    let path = walk_path(input, &guard_pos, &board_dim);
+
+    // Run parts
+    (part1(&path), part2(input, &board_dim, &path, &guard_pos))
 }
 
-fn part2(input: &[BoardLine]) -> u64 {
-    let (gx, gy) = guard_pos(input);
+fn part1(path: &FxHashSet<Coord>) -> u64 {
+    // Return length of the path
+    path.len() as u64
+}
 
-    let mut path = walk_path(input, gx, gy);
-    path.remove(&(gx, gy));
+fn part2(
+    input: &[BoardLine],
+    board_dim: &Coord,
+    path: &FxHashSet<Coord>,
+    guard_pos: &Coord,
+) -> u64 {
+    // Set up turn hashset
+    let mut turns = FxHashSet::with_capacity_and_hasher(path.len(), Default::default());
 
+    // Block each space on the path and check if a loop occurs
     path.iter()
-        .filter(|(bx, by)| loop_check(input, gx, gy, *bx, *by))
+        .filter(|&block_pos| {
+            block_pos != guard_pos && loop_check(input, board_dim, guard_pos, block_pos, &mut turns)
+        })
         .count() as u64
 }
 
-fn walk_path(input: &[BoardLine], mut gx: usize, mut gy: usize) -> FxHashSet<(usize, usize)> {
-    let boardx = input[0].len();
-    let boardy = input.len();
+#[derive(PartialEq, Eq, Hash, Clone)]
+struct GuardState {
+    pos: Coord,
+    dir: Dir,
+}
 
-    let mut dir = Dir::N;
+fn walk_path(input: &[BoardLine], guard_pos: &Coord, board_dim: &Coord) -> FxHashSet<Coord> {
+    // Set up guard state
+    let mut guard_state = GuardState {
+        pos: guard_pos.clone(),
+        dir: Dir::N,
+    };
 
+    // Set up visited node hash set
     let mut visited = FxHashSet::default();
-    visited.insert((gx, gy));
+    visited.insert(guard_pos.clone());
 
-    while let Some((nx, ny)) = dir.next_pos(gx, gy, boardx, boardy) {
-        if matches!(input[ny][nx], Space::Blocked) {
-            dir = dir.rotate();
+    // Loop next guard positions
+    while let Some(next) = guard_state.dir.next_pos(&guard_state.pos, board_dim) {
+        if matches!(input[next.y][next.x], Space::Blocked) {
+            guard_state.dir.rotate_right();
         } else {
-            (gx, gy) = (nx, ny);
-            visited.insert((gx, gy));
+            guard_state.pos = next;
+            visited.insert(guard_state.pos.clone());
         }
     }
 
     visited
 }
 
-fn loop_check(input: &[BoardLine], mut gx: usize, mut gy: usize, bx: usize, by: usize) -> bool {
-    let boardx = input[0].len();
-    let boardy = input.len();
+fn loop_check(
+    input: &[BoardLine],
+    board_dim: &Coord,
+    guard_pos: &Coord,
+    block_pos: &Coord,
+    turns: &mut FxHashSet<GuardState>,
+) -> bool {
+    let mut guard_state = GuardState {
+        pos: guard_pos.clone(),
+        dir: Dir::N,
+    };
 
-    let mut dir = Dir::N;
+    turns.clear();
 
-    let mut turns = FxHashSet::default();
+    while let Some(next) = guard_state.dir.next_pos(&guard_state.pos, board_dim) {
+        if matches!(input[next.y][next.x], Space::Blocked) || &next == block_pos {
+            guard_state.dir.rotate_right();
 
-    while let Some((nx, ny)) = dir.next_pos(gx, gy, boardx, boardy) {
-        if matches!(input[ny][nx], Space::Blocked) || (nx, ny) == (bx, by) {
-            dir = dir.rotate();
-
-            let ent = (gx, gy, dir.clone());
-
-            if turns.contains(&ent) {
+            if turns.contains(&guard_state) {
                 return true;
             }
 
-            turns.insert(ent);
+            turns.insert(guard_state.clone());
         } else {
-            (gx, gy) = (nx, ny);
+            guard_state.pos = next;
         }
     }
 
     false
 }
 
-fn guard_pos(input: &[BoardLine]) -> (usize, usize) {
+fn guard_pos(input: &[BoardLine]) -> Coord {
     input
         .iter()
         .enumerate()
@@ -87,9 +124,15 @@ fn guard_pos(input: &[BoardLine]) -> (usize, usize) {
             l.iter()
                 .enumerate()
                 .find_map(|(x, c)| if *c == Space::Guard { Some(x) } else { None })
-                .map(|x| (x, y))
+                .map(|x| Coord { x, y })
         })
         .expect("Unable to find the guard")
+}
+
+#[derive(PartialEq, Eq, Clone, Hash)]
+struct Coord {
+    x: usize,
+    y: usize,
 }
 
 #[derive(PartialEq)]
@@ -110,38 +153,32 @@ enum Dir {
 }
 
 impl Dir {
-    fn next_pos(&self, gx: usize, gy: usize, xdim: usize, ydim: usize) -> Option<(usize, usize)> {
-        let (dx, dy) = match self {
-            Dir::N => (0, -1),
-            Dir::E => (1, 0),
-            Dir::S => (0, 1),
-            Dir::W => (-1, 0),
+    fn next_pos(&self, guard_pos: &Coord, board_dim: &Coord) -> Option<Coord> {
+        let add = |p, max| {
+            let p = p + 1;
+            if p == max { None } else { Some(p) }
         };
 
-        let move_dir = |p, d, max| match d {
-            -1 => {
-                if p == 0 {
-                    None
-                } else {
-                    Some(p - 1)
-                }
-            }
-            1 => {
-                let p = p + 1;
-                if p == max { None } else { Some(p) }
-            }
-            _ => Some(p),
+        let sub = |p| {
+            if p == 0 { None } else { Some(p - 1) }
         };
 
-        Some((move_dir(gx, dx, xdim)?, move_dir(gy, dy, ydim)?))
+        let (x, y) = match self {
+            Dir::N => (guard_pos.x, sub(guard_pos.y)?),
+            Dir::E => (add(guard_pos.x, board_dim.x)?, guard_pos.y),
+            Dir::S => (guard_pos.x, add(guard_pos.y, board_dim.y)?),
+            Dir::W => (sub(guard_pos.x)?, guard_pos.y),
+        };
+
+        Some(Coord { x, y })
     }
 
-    fn rotate(&self) -> Dir {
+    fn rotate_right(&mut self) {
         match self {
-            Dir::N => Dir::E,
-            Dir::E => Dir::S,
-            Dir::S => Dir::W,
-            Dir::W => Dir::N,
+            Dir::N => *self = Dir::E,
+            Dir::E => *self = Dir::S,
+            Dir::S => *self = Dir::W,
+            Dir::W => *self = Dir::N,
         }
     }
 }
@@ -181,7 +218,10 @@ mod tests {
     #[test]
     fn test1() {
         let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
-        assert_eq!(part1(&input), 41);
-        assert_eq!(part2(&input), 6);
+
+        let (p1, p2) = run_parts(&input);
+
+        assert_eq!(p1, 41);
+        assert_eq!(p2, 6);
     }
 }
