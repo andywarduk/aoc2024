@@ -50,12 +50,6 @@ fn part2(input: &mut [BoardLine], board_dim: &Coord, path: &[GuardState]) -> u64
     // Set up turn hashset
     let mut turns = FxHashSet::default();
 
-    // Set up tried position hash set
-    let mut tried = FxHashSet::with_capacity_and_hasher(path.len(), Default::default());
-
-    // Mark initial guard position as tried
-    tried.insert(path[0].pos.clone());
-
     // Block each untried space on the path and check if a loop occurs
     path.iter()
         .skip(1)
@@ -63,18 +57,15 @@ fn part2(input: &mut [BoardLine], board_dim: &Coord, path: &[GuardState]) -> u64
             let mut looped = false;
             let pos = &state.pos;
 
-            if !tried.contains(pos) {
-                // Mark as tried
-                tried.insert(pos.clone());
-
+            if input[pos.y][pos.x] == Space::Empty {
                 // Block the position
                 input[pos.y][pos.x] = Space::Blocked;
 
                 // Check if a loop occurs
                 looped = loop_check(input, board_dim, last_state.clone(), &mut turns);
 
-                // Free the position
-                input[pos.y][pos.x] = Space::Empty;
+                // Mark as tried
+                input[pos.y][pos.x] = Space::Tried;
             };
 
             // Update last state pointer
@@ -176,6 +167,7 @@ enum Space {
     Blocked,
     Empty,
     Guard,
+    Tried,
 }
 
 type BoardLine = Vec<Space>;
