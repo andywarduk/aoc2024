@@ -5,10 +5,10 @@ use fxhash::FxHashSet;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
-    let input = parse_input_vec(6, input_transform)?;
+    let mut input = parse_input_vec(6, input_transform)?;
 
     // Run parts
-    let (p1, p2) = run_parts(&input);
+    let (p1, p2) = run_parts(&mut input);
 
     println!("Part 1: {}", p1);
     println!("Part 2: {}", p2);
@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn run_parts(input: &[BoardLine]) -> (u64, u64) {
+fn run_parts(input: &mut [BoardLine]) -> (u64, u64) {
     // Get board dimensions
     let board_dim = Coord {
         x: input[0].len(),
@@ -43,7 +43,7 @@ fn part1(path: &[GuardState]) -> u64 {
     positions.len() as u64
 }
 
-fn part2(input: &[BoardLine], board_dim: &Coord, path: &[GuardState]) -> u64 {
+fn part2(input: &mut [BoardLine], board_dim: &Coord, path: &[GuardState]) -> u64 {
     // Pointer to last state
     let mut last_state = &path[0];
 
@@ -60,15 +60,21 @@ fn part2(input: &[BoardLine], board_dim: &Coord, path: &[GuardState]) -> u64 {
     path.iter()
         .skip(1)
         .filter(|&state| {
-            let looped = if !tried.contains(&state.pos) {
+            let mut looped = false;
+            let pos = &state.pos;
+
+            if !tried.contains(pos) {
                 // Mark as tried
-                tried.insert(state.pos.clone());
+                tried.insert(pos.clone());
+
+                // Block the position
+                input[pos.y][pos.x] = Space::Blocked;
 
                 // Check if a loop occurs
-                loop_check(input, board_dim, last_state.clone(), &state.pos, &mut turns)
-            } else {
-                // Already tried
-                false
+                looped = loop_check(input, board_dim, last_state.clone(), &mut turns);
+
+                // Free the position
+                input[pos.y][pos.x] = Space::Empty;
             };
 
             // Update last state pointer
@@ -114,10 +120,9 @@ fn walk_path(input: &[BoardLine], guard_pos: &Coord, board_dim: &Coord) -> Vec<G
 }
 
 fn loop_check(
-    input: &[BoardLine],
+    input: &mut [BoardLine],
     board_dim: &Coord,
     mut guard_state: GuardState,
-    block_pos: &Coord,
     turns: &mut FxHashSet<GuardState>,
 ) -> bool {
     // Clear turn hashset
@@ -126,10 +131,7 @@ fn loop_check(
     // Get next position
     while let Some(next) = guard_state.dir.next_pos(&guard_state.pos, board_dim) {
         // Blocked?
-        if matches!(input[next.y][next.x], Space::Blocked) || &next == block_pos {
-            // Yes - turn right
-            guard_state.dir.rotate_right();
-
+        if matches!(input[next.y][next.x], Space::Blocked) {
             // Seen this turn before?
             if turns.contains(&guard_state) {
                 // Yes - there is a loop
@@ -138,6 +140,9 @@ fn loop_check(
 
             // No - add this turn
             turns.insert(guard_state.clone());
+
+            // Turn right
+            guard_state.dir.rotate_right();
         } else {
             // No - update guard position
             guard_state.pos = next;
@@ -248,9 +253,9 @@ mod tests {
 
     #[test]
     fn test1() {
-        let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
+        let mut input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
 
-        let (p1, p2) = run_parts(&input);
+        let (p1, p2) = run_parts(&mut input);
 
         assert_eq!(p1, 41);
         assert_eq!(p2, 6);
