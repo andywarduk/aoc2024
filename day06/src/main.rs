@@ -47,41 +47,29 @@ fn part2(input: &[BoardLine], board_dim: &Coord, path: &[GuardState]) -> u64 {
     // Pointer to last state
     let mut last_state = &path[0];
 
-    // Set up state hashsets
-    let mut turns = FxHashSet::with_capacity_and_hasher(path.len(), Default::default());
-    turns.insert(last_state.clone());
-
-    let mut add_turns = FxHashSet::with_capacity_and_hasher(path.len(), Default::default());
+    // Set up turn hashset
+    let mut turns = FxHashSet::default();
 
     // Set up tried position hash set
     let mut tried = FxHashSet::with_capacity_and_hasher(path.len(), Default::default());
+
+    // Mark initial guard position as tried
     tried.insert(path[0].pos.clone());
 
     // Block each untried space on the path and check if a loop occurs
     path.iter()
         .skip(1)
         .filter(|&state| {
-            let mut looped = false;
-
-            if !tried.contains(&state.pos) {
+            let looped = if !tried.contains(&state.pos) {
                 // Mark as tried
                 tried.insert(state.pos.clone());
 
                 // Check if a loop occurs
-                looped = loop_check(
-                    input,
-                    board_dim,
-                    last_state.clone(),
-                    &state.pos,
-                    &turns,
-                    &mut add_turns,
-                );
-
-                if state.dir != last_state.dir {
-                    // Add this turn to the turns set
-                    turns.insert(last_state.clone());
-                }
-            }
+                loop_check(input, board_dim, last_state.clone(), &state.pos, &mut turns)
+            } else {
+                // Already tried
+                false
+            };
 
             // Update last state pointer
             last_state = state;
@@ -130,11 +118,10 @@ fn loop_check(
     board_dim: &Coord,
     mut guard_state: GuardState,
     block_pos: &Coord,
-    turns: &FxHashSet<GuardState>,
-    add_turns: &mut FxHashSet<GuardState>,
+    turns: &mut FxHashSet<GuardState>,
 ) -> bool {
-    // Clear additional states hashset
-    add_turns.clear();
+    // Clear turn hashset
+    turns.clear();
 
     // Get next position
     while let Some(next) = guard_state.dir.next_pos(&guard_state.pos, board_dim) {
@@ -144,13 +131,13 @@ fn loop_check(
             guard_state.dir.rotate_right();
 
             // Seen this turn before?
-            if turns.contains(&guard_state) || add_turns.contains(&guard_state) {
+            if turns.contains(&guard_state) {
                 // Yes - there is a loop
                 return true;
             }
 
             // No - add this turn
-            add_turns.insert(guard_state.clone());
+            turns.insert(guard_state.clone());
         } else {
             // No - update guard position
             guard_state.pos = next;
