@@ -17,15 +17,11 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn part1(input: &[InputEnt], pathmap: &FxHashMap<Coord, usize>) -> u64 {
-    let cheats = find_cheats(input, pathmap, 2, 100);
-
-    cheats.len() as u64
+    find_cheats(input, pathmap, 2, 100).count() as u64
 }
 
 fn part2(input: &[InputEnt], pathmap: &FxHashMap<Coord, usize>) -> u64 {
-    let cheats = find_cheats(input, pathmap, 20, 100);
-
-    cheats.len() as u64
+    find_cheats(input, pathmap, 20, 100).count() as u64
 }
 
 fn find_path(map: &[Vec<Tile>]) -> FxHashMap<Coord, usize> {
@@ -35,20 +31,20 @@ fn find_path(map: &[Vec<Tile>]) -> FxHashMap<Coord, usize> {
     let mut pathmap = FxHashMap::default();
 
     let mut pos = start;
-    let mut n1_pos = None;
+    let mut n1_pos;
     let mut n2_pos = None;
     let mut idx = 0;
 
     pathmap.insert(pos, idx);
 
     while pos != end {
+        n1_pos = Some(pos);
         pos = next_pos(map, pos, n2_pos);
 
         idx += 1;
         pathmap.insert(pos, idx);
 
         n2_pos = n1_pos;
-        n1_pos = Some(pos);
     }
 
     pathmap
@@ -93,27 +89,24 @@ fn find_cheats(
     pathmap: &FxHashMap<Coord, usize>,
     duration: usize,
     cutoff: usize,
-) -> Vec<(Coord, usize)> {
-    let mut cheats = vec![];
-
-    // TODO convert to iter
-    pathmap.iter().for_each(|(&pos, &idx)| {
-        for duration in 2..=duration {
-            for cheat_pos in cheat_jumps(map, pos, duration) {
+) -> impl Iterator<Item = usize> {
+    pathmap.iter().flat_map(move |(&pos, &idx)| {
+        (2..=duration).flat_map(move |duration| {
+            cheat_jumps(map, pos, duration).filter_map(move |cheat_pos| {
                 if let Some(cheat_idx) = pathmap.get(&cheat_pos) {
                     if *cheat_idx > idx && *cheat_idx > duration {
                         let saved = cheat_idx - idx - duration;
 
                         if saved >= cutoff {
-                            cheats.push((cheat_pos, saved));
+                            return Some(saved);
                         }
                     }
                 }
-            }
-        }
-    });
 
-    cheats
+                None
+            })
+        })
+    })
 }
 
 fn cheat_jumps(map: &[Vec<Tile>], pos: Coord, duration: usize) -> impl Iterator<Item = Coord> {
@@ -224,12 +217,12 @@ mod tests {
 
         let pathmap = find_path(&input);
 
-        let cheats = find_cheats(&input, &pathmap, 2, 0);
+        let cheats = find_cheats(&input, &pathmap, 2, 2);
 
         let mut cheat_map = BTreeMap::new();
 
-        cheats.iter().for_each(|(_, saved)| {
-            *cheat_map.entry(*saved).or_insert(0) += 1u8;
+        cheats.for_each(|saved| {
+            *cheat_map.entry(saved).or_insert(0) += 1u8;
         });
 
         let mut map_iter = cheat_map.into_iter();
@@ -270,8 +263,8 @@ mod tests {
 
         let mut cheat_map = BTreeMap::new();
 
-        cheats.iter().for_each(|(_, saved)| {
-            *cheat_map.entry(*saved).or_insert(0) += 1u8;
+        cheats.for_each(|saved| {
+            *cheat_map.entry(saved).or_insert(0) += 1u8;
         });
 
         let mut map_iter = cheat_map.into_iter();
