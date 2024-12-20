@@ -7,49 +7,51 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Get input
     let input = parse_input_vec(20, input_transform)?;
 
-    let path = find_path(&input);
+    let pathmap = find_path(&input);
 
     // Run parts
-    println!("Part 1: {}", part1(&input, &path));
-    println!("Part 2: {}", part2(&input, &path));
+    println!("Part 1: {}", part1(&input, &pathmap));
+    println!("Part 2: {}", part2(&input, &pathmap));
 
     Ok(())
 }
 
-fn part1(input: &[InputEnt], path: &[(usize, usize)]) -> u64 {
-    let cheats = find_cheats(input, path, 2, 100);
+fn part1(input: &[InputEnt], pathmap: &FxHashMap<Coord, usize>) -> u64 {
+    let cheats = find_cheats(input, pathmap, 2, 100);
 
     cheats.len() as u64
 }
 
-fn part2(input: &[InputEnt], path: &[(usize, usize)]) -> u64 {
-    let cheats = find_cheats(input, path, 20, 100);
+fn part2(input: &[InputEnt], pathmap: &FxHashMap<Coord, usize>) -> u64 {
+    let cheats = find_cheats(input, pathmap, 20, 100);
 
     cheats.len() as u64
 }
 
-fn find_path(map: &[Vec<Tile>]) -> Vec<Coord> {
+fn find_path(map: &[Vec<Tile>]) -> FxHashMap<Coord, usize> {
     let start = find_tile(map, Tile::Start);
     let end = find_tile(map, Tile::End);
 
-    let mut path = vec![];
+    let mut pathmap = FxHashMap::default();
 
     let mut pos = start;
-    path.push(pos);
+    let mut n1_pos = None;
+    let mut n2_pos = None;
+    let mut idx = 0;
+
+    pathmap.insert(pos, idx);
 
     while pos != end {
-        let last_pos = if path.len() <= 1 {
-            None
-        } else {
-            Some(path[path.len() - 2])
-        };
+        pos = next_pos(map, pos, n2_pos);
 
-        pos = next_pos(map, pos, last_pos);
+        idx += 1;
+        pathmap.insert(pos, idx);
 
-        path.push(pos);
+        n2_pos = n1_pos;
+        n1_pos = Some(pos);
     }
 
-    path
+    pathmap
 }
 
 const DIRS: [(isize, isize); 4] = [(0, 1), (1, 0), (0, -1), (-1, 0)];
@@ -88,26 +90,19 @@ fn find_tile(map: &[Vec<Tile>], tile: Tile) -> Coord {
 
 fn find_cheats(
     map: &[Vec<Tile>],
-    path: &[Coord],
+    pathmap: &FxHashMap<Coord, usize>,
     duration: usize,
     cutoff: usize,
 ) -> Vec<(Coord, usize)> {
     let mut cheats = vec![];
 
-    let hashmap = path
-        .iter()
-        .enumerate()
-        .map(|(i, pos)| (*pos, i))
-        .collect::<FxHashMap<Coord, usize>>();
-
-    (0..path.len()).for_each(|i| {
-        let (px, py) = path[i];
-
+    // TODO convert to iter
+    pathmap.iter().for_each(|(&pos, &idx)| {
         for duration in 2..=duration {
-            for cheat_pos in cheat_jumps(map, (px, py), duration) {
-                if let Some(cheat_idx) = hashmap.get(&cheat_pos) {
-                    if *cheat_idx > i && *cheat_idx > duration {
-                        let saved = cheat_idx - i - duration;
+            for cheat_pos in cheat_jumps(map, pos, duration) {
+                if let Some(cheat_idx) = pathmap.get(&cheat_pos) {
+                    if *cheat_idx > idx && *cheat_idx > duration {
+                        let saved = cheat_idx - idx - duration;
 
                         if saved >= cutoff {
                             cheats.push((cheat_pos, saved));
@@ -227,9 +222,9 @@ mod tests {
     fn test2() {
         let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
 
-        let path = find_path(&input);
+        let pathmap = find_path(&input);
 
-        let cheats = find_cheats(&input, &path, 2, 0);
+        let cheats = find_cheats(&input, &pathmap, 2, 0);
 
         let mut cheat_map = BTreeMap::new();
 
@@ -269,9 +264,9 @@ mod tests {
     fn test3() {
         let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
 
-        let path = find_path(&input);
+        let pathmap = find_path(&input);
 
-        let cheats = find_cheats(&input, &path, 20, 50);
+        let cheats = find_cheats(&input, &pathmap, 20, 50);
 
         let mut cheat_map = BTreeMap::new();
 
