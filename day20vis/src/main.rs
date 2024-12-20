@@ -18,12 +18,12 @@ const SCALE: u16 = 5;
 
 fn draw(map: &[InputEnt], pathmap: &FxHashMap<Coord, usize>) -> Result<(), Box<dyn Error>> {
     let palette = vec![
-        [0, 0, 0],
-        [32, 32, 192],
-        [128, 128, 128],
-        [255, 255, 255],
-        [255, 0, 0],
-        [0, 255, 0],
+        [0, 0, 0],       // Black
+        [32, 32, 192],   // Blue (walls)
+        [128, 128, 128], // Gray (path)
+        [255, 255, 255], // White (cheat)
+        [255, 0, 0],     // Red (start)
+        [0, 255, 0],     // Green (end)
     ];
 
     let mut gif = Gif::new(
