@@ -18,12 +18,13 @@ const SCALE: u16 = 5;
 
 fn draw(map: &[InputEnt], pathmap: &FxHashMap<Coord, usize>) -> Result<(), Box<dyn Error>> {
     let palette = vec![
-        [0, 0, 0],       // Black
-        [32, 32, 192],   // Blue (walls)
-        [128, 128, 128], // Gray (path)
-        [255, 255, 255], // White (cheat)
-        [255, 0, 0],     // Red (start)
-        [0, 255, 0],     // Green (end)
+        [0, 0, 0],       // 0 Black
+        [32, 32, 192],   // 1 Blue (walls)
+        [64, 64, 64],    // 2 Gray (path)
+        [128, 128, 128], // 3 Gray (cheat over path)
+        [192, 192, 255], // 4 Gray (cheat over wall)
+        [255, 0, 0],     // 5 Red (start)
+        [0, 255, 0],     // 6 Green (end)
     ];
 
     let mut gif = Gif::new(
@@ -49,11 +50,11 @@ fn draw(map: &[InputEnt], pathmap: &FxHashMap<Coord, usize>) -> Result<(), Box<d
     };
 
     let draw_startend = |frame: &mut Vec<Vec<u8>>| {
-        frame[start.1][start.0] = 4;
-        frame[end.1][end.0] = 5;
+        frame[start.1][start.0] = 5;
+        frame[end.1][end.0] = 6;
     };
 
-    let draw_line = |frame: &mut Vec<Vec<u8>>, from: Coord, to: Coord, colour: u8| {
+    let draw_line = |frame: &mut Vec<Vec<u8>>, from: Coord, to: Coord| {
         let mut x0 = from.0 as isize;
         let mut y0 = from.1 as isize;
         let x1 = to.0 as isize;
@@ -65,7 +66,13 @@ fn draw(map: &[InputEnt], pathmap: &FxHashMap<Coord, usize>) -> Result<(), Box<d
         let sy = if y0 < y1 { 1 } else { -1 };
         let mut error = dx + dy;
 
-        frame[y0 as usize][x0 as usize] = colour;
+        let mut plot = |x, y| {
+            let (x, y) = (x as usize, y as usize);
+
+            frame[y][x] = if map[y][x] == Tile::Wall { 4 } else { 3 };
+        };
+
+        plot(x0, y0);
 
         loop {
             if x0 == x1 && y0 == y1 {
@@ -77,13 +84,13 @@ fn draw(map: &[InputEnt], pathmap: &FxHashMap<Coord, usize>) -> Result<(), Box<d
             if e2 >= dy {
                 error += dy;
                 x0 += sx;
-                frame[y0 as usize][x0 as usize] = colour;
+                plot(x0, y0);
             }
 
             if e2 <= dx {
                 error += dx;
                 y0 += sy;
-                frame[y0 as usize][x0 as usize] = colour;
+                plot(x0, y0);
             }
         }
     };
@@ -94,7 +101,7 @@ fn draw(map: &[InputEnt], pathmap: &FxHashMap<Coord, usize>) -> Result<(), Box<d
     draw_walls(&mut frame);
 
     for &(x, y) in pathmap.keys() {
-        frame[y][x] = 2;
+        frame[y][x] = 3;
     }
 
     draw_startend(&mut frame);
@@ -112,7 +119,7 @@ fn draw(map: &[InputEnt], pathmap: &FxHashMap<Coord, usize>) -> Result<(), Box<d
             }
         }
 
-        draw_line(&mut frame, pos, cheat_pos, 3);
+        draw_line(&mut frame, pos, cheat_pos);
 
         draw_startend(&mut frame);
 
