@@ -202,6 +202,16 @@ mod tests {
 ###############
 ";
 
+    fn cheat_map(cheats: impl Iterator<Item = usize>) -> BTreeMap<usize, u8> {
+        let mut cheat_map = BTreeMap::new();
+
+        cheats.for_each(|saved| {
+            *cheat_map.entry(saved).or_insert(0) += 1u8;
+        });
+
+        cheat_map
+    }
+
     #[test]
     fn test1() {
         let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
@@ -214,18 +224,8 @@ mod tests {
     #[test]
     fn test2() {
         let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
-
         let pathmap = find_path(&input);
-
-        let cheats = find_cheats(&input, &pathmap, 2, 2);
-
-        let mut cheat_map = BTreeMap::new();
-
-        cheats.for_each(|saved| {
-            *cheat_map.entry(saved).or_insert(0) += 1u8;
-        });
-
-        let mut map_iter = cheat_map.into_iter();
+        let mut cheat_map = cheat_map(find_cheats(&input, &pathmap, 2, 2)).into_iter();
 
         // There are 14 cheats that save 2 picoseconds.
         // There are 14 cheats that save 4 picoseconds.
@@ -239,35 +239,25 @@ mod tests {
         // There is one cheat that saves 40 picoseconds.
         // There is one cheat that saves 64 picoseconds.
 
-        assert_eq!(map_iter.next(), Some((2, 14)));
-        assert_eq!(map_iter.next(), Some((4, 14)));
-        assert_eq!(map_iter.next(), Some((6, 2)));
-        assert_eq!(map_iter.next(), Some((8, 4)));
-        assert_eq!(map_iter.next(), Some((10, 2)));
-        assert_eq!(map_iter.next(), Some((12, 3)));
-        assert_eq!(map_iter.next(), Some((20, 1)));
-        assert_eq!(map_iter.next(), Some((36, 1)));
-        assert_eq!(map_iter.next(), Some((38, 1)));
-        assert_eq!(map_iter.next(), Some((40, 1)));
-        assert_eq!(map_iter.next(), Some((64, 1)));
-        assert_eq!(map_iter.next(), None);
+        assert_eq!(cheat_map.next(), Some((2, 14)));
+        assert_eq!(cheat_map.next(), Some((4, 14)));
+        assert_eq!(cheat_map.next(), Some((6, 2)));
+        assert_eq!(cheat_map.next(), Some((8, 4)));
+        assert_eq!(cheat_map.next(), Some((10, 2)));
+        assert_eq!(cheat_map.next(), Some((12, 3)));
+        assert_eq!(cheat_map.next(), Some((20, 1)));
+        assert_eq!(cheat_map.next(), Some((36, 1)));
+        assert_eq!(cheat_map.next(), Some((38, 1)));
+        assert_eq!(cheat_map.next(), Some((40, 1)));
+        assert_eq!(cheat_map.next(), Some((64, 1)));
+        assert_eq!(cheat_map.next(), None);
     }
 
     #[test]
     fn test3() {
         let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
-
         let pathmap = find_path(&input);
-
-        let cheats = find_cheats(&input, &pathmap, 20, 50);
-
-        let mut cheat_map = BTreeMap::new();
-
-        cheats.for_each(|saved| {
-            *cheat_map.entry(saved).or_insert(0) += 1u8;
-        });
-
-        let mut map_iter = cheat_map.into_iter();
+        let mut cheat_map = cheat_map(find_cheats(&input, &pathmap, 20, 50)).into_iter();
 
         // There are 32 cheats that save 50 picoseconds.
         // There are 31 cheats that save 52 picoseconds.
@@ -284,21 +274,21 @@ mod tests {
         // There are 4 cheats that save 74 picoseconds.
         // There are 3 cheats that save 76 picoseconds.
 
-        assert_eq!(map_iter.next(), Some((50, 32)));
-        assert_eq!(map_iter.next(), Some((52, 31)));
-        assert_eq!(map_iter.next(), Some((54, 29)));
-        assert_eq!(map_iter.next(), Some((56, 39)));
-        assert_eq!(map_iter.next(), Some((58, 25)));
-        assert_eq!(map_iter.next(), Some((60, 23)));
-        assert_eq!(map_iter.next(), Some((62, 20)));
-        assert_eq!(map_iter.next(), Some((64, 19)));
-        assert_eq!(map_iter.next(), Some((66, 12)));
-        assert_eq!(map_iter.next(), Some((68, 14)));
-        assert_eq!(map_iter.next(), Some((70, 12)));
-        assert_eq!(map_iter.next(), Some((72, 22)));
-        assert_eq!(map_iter.next(), Some((74, 4)));
-        assert_eq!(map_iter.next(), Some((76, 3)));
-        assert_eq!(map_iter.next(), None);
+        assert_eq!(cheat_map.next(), Some((50, 32)));
+        assert_eq!(cheat_map.next(), Some((52, 31)));
+        assert_eq!(cheat_map.next(), Some((54, 29)));
+        assert_eq!(cheat_map.next(), Some((56, 39)));
+        assert_eq!(cheat_map.next(), Some((58, 25)));
+        assert_eq!(cheat_map.next(), Some((60, 23)));
+        assert_eq!(cheat_map.next(), Some((62, 20)));
+        assert_eq!(cheat_map.next(), Some((64, 19)));
+        assert_eq!(cheat_map.next(), Some((66, 12)));
+        assert_eq!(cheat_map.next(), Some((68, 14)));
+        assert_eq!(cheat_map.next(), Some((70, 12)));
+        assert_eq!(cheat_map.next(), Some((72, 22)));
+        assert_eq!(cheat_map.next(), Some((74, 4)));
+        assert_eq!(cheat_map.next(), Some((76, 3)));
+        assert_eq!(cheat_map.next(), None);
     }
 
     #[test]
