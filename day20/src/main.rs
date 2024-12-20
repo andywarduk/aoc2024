@@ -184,7 +184,7 @@ mod tests {
 
     use super::*;
 
-    const EXAMPLE1: &str = "\
+    const EXAMPLE: &str = "\
 ###############
 #...#...#.....#
 #.#.#.#.#.###.#
@@ -202,19 +202,9 @@ mod tests {
 ###############
 ";
 
-    fn cheat_map(cheats: impl Iterator<Item = usize>) -> BTreeMap<usize, u8> {
-        let mut cheat_map = BTreeMap::new();
-
-        cheats.for_each(|saved| {
-            *cheat_map.entry(saved).or_insert(0) += 1u8;
-        });
-
-        cheat_map
-    }
-
     #[test]
     fn test1() {
-        let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
+        let input = parse_test_vec(EXAMPLE, input_transform).unwrap();
 
         let path = find_path(&input);
 
@@ -223,7 +213,7 @@ mod tests {
 
     #[test]
     fn test2() {
-        let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
+        let input = parse_test_vec(EXAMPLE, input_transform).unwrap();
         let pathmap = find_path(&input);
         let mut cheat_map = cheat_map(find_cheats(&input, &pathmap, 2, 2)).into_iter();
 
@@ -255,7 +245,7 @@ mod tests {
 
     #[test]
     fn test3() {
-        let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
+        let input = parse_test_vec(EXAMPLE, input_transform).unwrap();
         let pathmap = find_path(&input);
         let mut cheat_map = cheat_map(find_cheats(&input, &pathmap, 20, 50)).into_iter();
 
@@ -343,5 +333,15 @@ mod tests {
         assert_eq!(jumps.next(), Some((1, 0)));
 
         assert_eq!(jumps.next(), None);
+    }
+
+    fn cheat_map(cheats: impl Iterator<Item = usize>) -> BTreeMap<usize, u8> {
+        let mut cheat_map = BTreeMap::new();
+
+        cheats.for_each(|saved| {
+            *cheat_map.entry(saved).or_insert(0) += 1u8;
+        });
+
+        cheat_map
     }
 }
