@@ -46,14 +46,18 @@ impl<'a> Device<'a> {
     }
 
     pub fn run(&mut self) -> bool {
+        if self.debug {
+            self.print_regs();
+        }
+
         if let Some(program) = self.program {
             while self.pc < program.len() {
-                if self.debug {
-                    print!("({}) ", self.pc);
-                };
-
                 let op = program[self.pc];
                 let operand_val = program[self.pc + 1];
+
+                if self.debug {
+                    print!("pc:{:02} [{},{}]: ", self.pc, op, operand_val);
+                };
 
                 self.pc += 2;
 
@@ -63,7 +67,11 @@ impl<'a> Device<'a> {
                         let operand = Operand::from_u8(operand_val);
 
                         if self.debug {
-                            print!("adv - a /= 2^{}", operand.debug(self));
+                            print!(
+                                "adv - a /= 2^{} ({})",
+                                operand.debug(),
+                                Self::debug_val((2 as RegType).pow(operand.value(self) as u32))
+                            );
                         };
 
                         self.reg[Reg::A as usize] /= (2 as RegType).pow(operand.value(self) as u32);
@@ -71,7 +79,7 @@ impl<'a> Device<'a> {
                     1 => {
                         // bxl
                         if self.debug {
-                            print!("bxl - b ^= {}", operand_val);
+                            print!("bxl - b ^= {}", Self::debug_val(operand_val as RegType));
                         };
 
                         self.reg[Reg::B as usize] ^= operand_val as RegType;
@@ -81,7 +89,7 @@ impl<'a> Device<'a> {
                         let operand = Operand::from_u8(operand_val);
 
                         if self.debug {
-                            print!("bst - b = b({}) % 8", self.reg[Reg::B as usize]);
+                            print!("bst - b = {} % 8", operand.debug());
                         };
 
                         self.reg[Reg::B as usize] = operand.value(self) % 8;
@@ -91,12 +99,12 @@ impl<'a> Device<'a> {
                         let operand = Operand::from_u8(operand_val);
 
                         if self.debug {
-                            print!("jnz - a={}", self.reg[Reg::A as usize]);
+                            print!("jnz a");
                         };
 
                         if self.reg[Reg::A as usize] != 0 {
                             if self.debug {
-                                print!(" - jump to {}", operand.debug(self));
+                                print!(" - jump to {}", operand.debug());
                             }
 
                             self.pc = operand.value(self) as usize;
@@ -107,7 +115,7 @@ impl<'a> Device<'a> {
                     4 => {
                         // bxc
                         if self.debug {
-                            print!("bxc - b ^= c({})", self.reg[Reg::C as usize]);
+                            print!("bxc - b ^= c");
                         };
 
                         self.reg[Reg::B as usize] ^= self.reg[Reg::C as usize];
@@ -117,7 +125,11 @@ impl<'a> Device<'a> {
                         let operand = Operand::from_u8(operand_val);
 
                         if self.debug {
-                            print!("out - {}", operand.debug(self));
+                            print!(
+                                "out {} % 8 ({})",
+                                operand.debug(),
+                                Self::debug_val(operand.value(self) % 8)
+                            );
                         };
 
                         self.out.push((operand.value(self) % 8) as u8);
@@ -127,7 +139,11 @@ impl<'a> Device<'a> {
                         let operand = Operand::from_u8(operand_val);
 
                         if self.debug {
-                            print!("bdv - b = a / 2^{}", operand.debug(self));
+                            print!(
+                                "bdv - b = a / 2^{} ({})",
+                                operand.debug(),
+                                Self::debug_val((2 as RegType).pow(operand.value(self) as u32))
+                            );
                         };
 
                         self.reg[Reg::B as usize] = self.reg[Reg::A as usize]
@@ -138,7 +154,11 @@ impl<'a> Device<'a> {
                         let operand = Operand::from_u8(operand_val);
 
                         if self.debug {
-                            print!("cdv - c = a / 2^{}", operand.debug(self));
+                            print!(
+                                "cdv - c = a / 2^{} ({})",
+                                operand.debug(),
+                                Self::debug_val((2 as RegType).pow(operand.value(self) as u32))
+                            );
                         };
 
                         self.reg[2] = self.reg[Reg::A as usize]
@@ -148,15 +168,29 @@ impl<'a> Device<'a> {
                 }
 
                 if self.debug {
-                    println!(
-                        "\na={:#o} b={:#o} c={:#o}",
-                        self.reg[0], self.reg[1], self.reg[2]
-                    );
+                    self.print_regs();
                 }
             }
         }
 
+        if self.debug {
+            println!("end, output={:?}", self.out);
+        }
+
         true
+    }
+
+    fn print_regs(&self) {
+        println!(
+            "\na={} b={} c={}",
+            Self::debug_val(self.reg[0]),
+            Self::debug_val(self.reg[1]),
+            Self::debug_val(self.reg[2]),
+        );
+    }
+
+    fn debug_val(v: RegType) -> String {
+        format!("[{v} x{v:x} o{v:o} b{v:b}]")
     }
 }
 
@@ -205,10 +239,10 @@ impl Operand {
         }
     }
 
-    fn debug(&self, device: &Device) -> String {
+    fn debug(&self) -> String {
         match self {
-            Operand::Lit(lit) => lit.to_string(),
-            Operand::Reg(reg) => format!("{}({})", reg.debug(), device.reg[(*reg) as usize]),
+            Operand::Lit(lit) => Device::debug_val(*lit as RegType),
+            Operand::Reg(reg) => reg.debug().to_string(),
         }
     }
 }
