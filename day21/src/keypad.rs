@@ -1,4 +1,7 @@
-use std::{cmp::Ordering, collections::BinaryHeap};
+use std::{
+    cmp::Ordering,
+    collections::{BinaryHeap, VecDeque},
+};
 
 use fxhash::FxHashMap;
 
@@ -66,15 +69,12 @@ impl KeyPad {
     }
 
     fn build_key_routes(&self, from: &Coord, to: &Coord) -> Vec<Vec<Action>> {
-        // Function to calculate manhattan distance from the end point
-        let dist = |(x, y)| to.0.abs_diff(x) + to.1.abs_diff(y);
-
         // initialise work queue
-        let mut queue = BinaryHeap::new();
+        let mut queue = VecDeque::new();
 
-        queue.push(Work {
+        queue.push_back(Work {
             coord: *from,
-            dist: dist(*from),
+            cost: 0,
             path: vec![],
         });
 
@@ -86,7 +86,7 @@ impl KeyPad {
         let mut best_paths = Vec::new();
 
         // Process work queue
-        while let Some(mut work) = queue.pop() {
+        while let Some(mut work) = queue.pop_front() {
             // Reached end point?
             if work.coord == *to {
                 // Yes
@@ -128,9 +128,9 @@ impl KeyPad {
                 let mut next_path = work.path.clone();
                 next_path.push(action);
 
-                queue.push(Work {
+                queue.push_back(Work {
                     coord: next,
-                    dist: dist(next),
+                    cost: work.cost + 1,
                     path: next_path,
                 });
             }
@@ -168,18 +168,6 @@ impl KeyPad {
 #[derive(PartialEq, Eq)]
 struct Work {
     coord: Coord,
-    dist: usize,
+    cost: usize,
     path: Vec<Action>,
-}
-
-impl Ord for Work {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        other.dist.cmp(&self.dist)
-    }
-}
-
-impl PartialOrd for Work {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
-    }
 }
