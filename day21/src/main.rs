@@ -80,17 +80,15 @@ fn build_keypads(count: usize) -> Vec<KeyPad> {
 
 #[derive(Debug, Clone)]
 struct Solution {
-    curkey: Vec<Key>,
     action_cnt: Vec<u64>,
 }
 
 fn press_keys(keypads: &[KeyPad], keys: &[Key]) -> u64 {
     let solution = Solution {
-        curkey: vec![Key::Action(Action::Activate); keypads.len()],
         action_cnt: vec![0; keypads.len()],
     };
 
-    let solutions = press_keys_pad(keypads, 0, keys, solution);
+    let (_, solutions) = press_keys_pad(keypads, 0, keys, solution);
 
     let min = solutions
         .iter()
@@ -106,47 +104,49 @@ fn press_keys_pad(
     pad: usize,
     keys: &[Key],
     solution: Solution,
-) -> Vec<Solution> {
+) -> (Key, Vec<Solution>) {
     let mut solutions = vec![solution];
+    let mut curkey = Key::Action(Action::Activate);
 
     for key in keys {
         let mut new_solutions = Vec::new();
 
         for solution in solutions {
-            new_solutions.extend(press_keys_key(keypads, pad, key, solution));
+            new_solutions.extend(press_keys_key(keypads, pad, key, curkey, solution));
         }
 
         solutions = new_solutions;
+        curkey = *key;
     }
 
-    solutions
+    (curkey, solutions)
 }
 
 fn press_keys_key(
     keypads: &[KeyPad],
     pad: usize,
     key: &Key,
-    mut solution: Solution,
+    curkey: Key,
+    solution: Solution,
 ) -> Vec<Solution> {
     let mut new_solutions = Vec::new();
 
     if pad + 1 == keypads.len() {
-        solution.curkey[pad] = *key;
-
         new_solutions.push(solution);
     } else {
-        let paths = keypads[pad].routes(solution.curkey[pad], *key);
+        let paths = keypads[pad].routes(curkey, *key);
 
         for path in paths.iter() {
             // Recurse
             let mut new_solution = solution.clone();
 
-            new_solution.curkey[pad] = *key;
             new_solution.action_cnt[pad + 1] += path.len() as u64;
 
             let keys = convert_actions_to_keys(path);
 
-            new_solutions.extend(press_keys_pad(keypads, pad + 1, &keys, new_solution));
+            let (_, solutions) = press_keys_pad(keypads, pad + 1, &keys, new_solution);
+
+            new_solutions.extend(solutions);
         }
     }
 
