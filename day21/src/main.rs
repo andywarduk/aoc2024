@@ -10,26 +10,28 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Get input
     let input = parse_input_vec(21, input_transform)?;
 
+    let (numkeypad, dirkeypad) = build_keypads();
+
     // Run parts
-    println!("Part 1: {}", part1(&input));
-    println!("Part 2: {}", part2(&input));
+    println!("Part 1: {}", part1(&input, &numkeypad, &dirkeypad));
+    println!("Part 2: {}", part2(&input, &numkeypad, &dirkeypad));
 
     Ok(())
 }
 
-fn part1(input: &[InputEnt]) -> u64 {
+fn part1(input: &[InputEnt], numkeypad: &KeyPad, dirkeypad: &KeyPad) -> u64 {
     // Solve chain of 1 robot numeric keypad, 2 intermediate robot directional keypads and 1 human directional keypad
-    solve_chain(input, 2)
+    solve_chain(input, 2, numkeypad, dirkeypad)
 }
 
-fn part2(input: &[InputEnt]) -> u64 {
+fn part2(input: &[InputEnt], numkeypad: &KeyPad, dirkeypad: &KeyPad) -> u64 {
     // Solve chain of 1 robot numeric keypad, 25 intermediate robot directional keypads and 1 human directional keypad
-    solve_chain(input, 25)
+    solve_chain(input, 25, numkeypad, dirkeypad)
 }
 
-fn solve_chain(input: &[InputEnt], count: usize) -> u64 {
+fn solve_chain(input: &[InputEnt], count: usize, numkeypad: &KeyPad, dirkeypad: &KeyPad) -> u64 {
     // Buld keypad chain
-    let keypads = build_keypads(count);
+    let keypads = build_keypad_chain(numkeypad, dirkeypad, count);
 
     // Iterate key sequences for numeric keypad
     input
@@ -55,7 +57,7 @@ fn solve_chain(input: &[InputEnt], count: usize) -> u64 {
         .sum()
 }
 
-fn build_keypads(count: usize) -> Vec<KeyPad> {
+fn build_keypads() -> (KeyPad, KeyPad) {
     // Create directional keypad
     let mut dirkeypad = KeyPad::new(3, 2);
     // (0,0) empty
@@ -82,8 +84,12 @@ fn build_keypads(count: usize) -> Vec<KeyPad> {
     numkeypad.setkey((2, 3), Key::Action(Action::Activate));
     numkeypad.build_routes(Some(&dirkeypad));
 
+    (numkeypad, dirkeypad)
+}
+
+fn build_keypad_chain(numkeypad: &KeyPad, dirkeypad: &KeyPad, count: usize) -> Vec<KeyPad> {
     // Create vector of keypads starting with the numeric keypad
-    let mut keypads = vec![numkeypad];
+    let mut keypads = vec![numkeypad.clone()];
 
     // Add intermediate keypads and human controlled keypad
     for _ in 0..=count {
@@ -212,7 +218,8 @@ mod tests {
 
     #[test]
     fn test1() {
-        let keypads = build_keypads(0);
+        let (numkeypad, dirkeypad) = build_keypads();
+        let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 0);
 
         assert_eq!(
             keypads[0].routes(Key::Action(Action::Activate), Key::Num(0)),
@@ -239,7 +246,8 @@ mod tests {
 
     #[test]
     fn test2() {
-        let keypads = build_keypads(0);
+        let (numkeypad, dirkeypad) = build_keypads();
+        let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 0);
 
         let keys = input_transform("029A".to_string());
 
@@ -250,7 +258,8 @@ mod tests {
 
     #[test]
     fn test3() {
-        let keypads = build_keypads(1);
+        let (numkeypad, dirkeypad) = build_keypads();
+        let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 1);
 
         let keys = input_transform("029A".to_string());
 
@@ -261,7 +270,8 @@ mod tests {
 
     #[test]
     fn test4() {
-        let keypads = build_keypads(2);
+        let (numkeypad, dirkeypad) = build_keypads();
+        let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 2);
 
         let keys = input_transform("029A".to_string());
 
@@ -281,6 +291,9 @@ mod tests {
     #[test]
     fn test5() {
         let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
-        assert_eq!(part1(&input), 126384);
+
+        let (numkeypad, dirkeypad) = build_keypads();
+
+        assert_eq!(part1(&input, &numkeypad, &dirkeypad), 126384);
     }
 }
