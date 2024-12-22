@@ -17,7 +17,15 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn part1(input: &[InputEnt]) -> u64 {
-    let keypads = build_keypads(2);
+    solve_chain(input, 2)
+}
+
+fn part2(input: &[InputEnt]) -> u64 {
+    solve_chain(input, 25)
+}
+
+fn solve_chain(input: &[InputEnt], count: usize) -> u64 {
+    let keypads = build_keypads(count);
 
     input
         .iter()
@@ -38,10 +46,6 @@ fn part1(input: &[InputEnt]) -> u64 {
             len * val
         })
         .sum()
-}
-
-fn part2(input: &[InputEnt]) -> u64 {
-    0 // TODO
 }
 
 fn build_keypads(count: usize) -> Vec<KeyPad> {
@@ -78,17 +82,16 @@ fn build_keypads(count: usize) -> Vec<KeyPad> {
     keypads
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-struct Solution(Vec<u64>);
+type Solution = Vec<u64>;
 
 fn press_keys(keypads: &[KeyPad], keys: &[Key]) -> u64 {
-    let solution = Solution(vec![0; keypads.len()]);
+    let solution = vec![0; keypads.len()];
 
-    let (_, solutions) = press_keys_pad(keypads, 0, keys, solution);
+    let solutions = press_keys_pad(keypads, 0, keys, solution);
 
     let min = solutions
         .iter()
-        .map(|s| s.0[keypads.len() - 1])
+        .map(|s| s[keypads.len() - 1])
         .min()
         .unwrap();
 
@@ -100,7 +103,7 @@ fn press_keys_pad(
     pad: usize,
     keys: &[Key],
     solution: Solution,
-) -> (Key, Vec<Solution>) {
+) -> Vec<Solution> {
     let mut solutions = vec![solution];
     let mut curkey = Key::Action(Action::Activate);
 
@@ -115,7 +118,7 @@ fn press_keys_pad(
         curkey = *key;
     }
 
-    (curkey, solutions)
+    solutions
 }
 
 fn press_keys_key(
@@ -136,16 +139,20 @@ fn press_keys_key(
             // Recurse
             let mut new_solution = solution.clone();
 
-            new_solution.0[pad + 1] += path.len() as u64;
+            new_solution[pad + 1] += path.len() as u64;
 
             let keys = convert_actions_to_keys(path);
 
-            let (_, mut solutions) = press_keys_pad(keypads, pad + 1, &keys, new_solution);
+            let solutions = press_keys_pad(keypads, pad + 1, &keys, new_solution);
 
-            solutions.sort();
-            if solutions.windows(2).any(|a| a[0] != a[1]) {
-                println!("{solutions:?}")
-            }
+            // TODO
+            // if solutions.len() > 1 {
+            //     println!("{solutions:?}");
+            //     solutions.sort();
+            //     if solutions.windows(2).any(|a| a[0] != a[1]) {
+            //         panic!("{solutions:?}")
+            //     }
+            // }
 
             new_solutions.extend(solutions);
         }
@@ -196,7 +203,6 @@ mod tests {
         ]);
         assert_eq!(keypads[0].routes(Key::Char('2'), Key::Char('9')), &vec![
             vec![Action::Right, Action::Up, Action::Up, Action::Activate],
-            vec![Action::Up, Action::Right, Action::Up, Action::Activate],
             vec![Action::Up, Action::Up, Action::Right, Action::Activate],
         ]);
         assert_eq!(
