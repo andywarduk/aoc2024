@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use aoc::input::parse_input_vec;
+use fxhash::FxHashMap;
 use keypad::{Action, Key, KeyPad};
 
 mod keypad;
@@ -82,43 +83,38 @@ fn build_keypads(count: usize) -> Vec<KeyPad> {
     keypads
 }
 
-type Solution = Vec<u64>;
-
 fn press_keys(keypads: &[KeyPad], keys: &[Key]) -> u64 {
-    let solution = vec![0; keypads.len()];
+    let mut keys_cache = FxHashMap::default();
 
-    let solutions = press_keys_pad(keypads, 0, keys, solution);
-
-    let min = solutions
-        .iter()
-        .map(|s| s[keypads.len() - 1])
-        .min()
-        .unwrap();
-
-    min
+    press_keys_pad(keypads, 0, keys, &mut keys_cache)
 }
 
 fn press_keys_pad(
     keypads: &[KeyPad],
     pad: usize,
     keys: &[Key],
-    solution: Solution,
-) -> Vec<Solution> {
-    let mut solutions = vec![solution];
-    let mut curkey = Key::Action(Action::Activate);
+    keys_cache: &mut FxHashMap<(usize, Key, Key), u64>,
+) -> u64 {
+    if pad == keypads.len() - 1 {
+        keys.len() as u64
+    } else {
+        keys.iter()
+            .fold(
+                (Key::Action(Action::Activate), 0),
+                |(curkey, solutions), key| {
+                    let key_sols = if let Some(key_sols) = keys_cache.get(&(pad, curkey, *key)) {
+                        *key_sols
+                    } else {
+                        let key_sols = press_keys_key(keypads, pad, key, curkey, keys_cache);
+                        keys_cache.insert((pad, curkey, *key), key_sols);
+                        key_sols
+                    };
 
-    for key in keys {
-        let mut new_solutions = Vec::new();
-
-        for solution in solutions {
-            new_solutions.extend(press_keys_key(keypads, pad, key, curkey, solution));
-        }
-
-        solutions = new_solutions;
-        curkey = *key;
+                    (*key, solutions + key_sols)
+                },
+            )
+            .1
     }
-
-    solutions
 }
 
 fn press_keys_key(
@@ -126,39 +122,33 @@ fn press_keys_key(
     pad: usize,
     key: &Key,
     curkey: Key,
-    solution: Solution,
-) -> Vec<Solution> {
-    let mut new_solutions = Vec::new();
+    keys_cache: &mut FxHashMap<(usize, Key, Key), u64>,
+) -> u64 {
+    let paths = keypads[pad].routes(curkey, *key);
 
-    if pad + 1 == keypads.len() {
-        new_solutions.push(solution);
+    let path = if paths.len() > 1 {
+        let mut costs = paths
+            .iter()
+            .enumerate()
+            .map(|(i, path)| {
+                let keys = convert_actions_to_keys(path);
+
+                let solution = press_keys_pad(keypads, pad + 1, &keys, keys_cache);
+
+                (solution, i)
+            })
+            .collect::<Vec<_>>();
+
+        costs.sort_by(|a, b| a.0.cmp(&b.0));
+
+        &paths[costs[0].1]
     } else {
-        let paths = keypads[pad].routes(curkey, *key);
+        &paths[0]
+    };
 
-        for path in paths.iter() {
-            // Recurse
-            let mut new_solution = solution.clone();
+    let keys = convert_actions_to_keys(path);
 
-            new_solution[pad + 1] += path.len() as u64;
-
-            let keys = convert_actions_to_keys(path);
-
-            let solutions = press_keys_pad(keypads, pad + 1, &keys, new_solution);
-
-            // TODO
-            // if solutions.len() > 1 {
-            //     println!("{solutions:?}");
-            //     solutions.sort();
-            //     if solutions.windows(2).any(|a| a[0] != a[1]) {
-            //         panic!("{solutions:?}")
-            //     }
-            // }
-
-            new_solutions.extend(solutions);
-        }
-    }
-
-    new_solutions
+    press_keys_pad(keypads, pad + 1, &keys, keys_cache)
 }
 
 fn convert_actions_to_keys(actions: &[Action]) -> Vec<Key> {

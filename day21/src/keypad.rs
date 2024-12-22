@@ -58,13 +58,17 @@ impl KeyPad {
             }
         }
 
-        self.optimise_routes(parent);
+        loop {
+            if !dbg!(self.optimise_routes(parent)) {
+                break;
+            };
+        }
     }
 
-    fn optimise_routes(&mut self, parent: Option<&KeyPad>) {
+    fn optimise_routes(&mut self, parent: Option<&KeyPad>) -> bool {
         let mut new_routes = FxHashMap::default();
 
-        for (key, routes) in &self.routes {
+        for (coords, routes) in &self.routes {
             let expanded = routes
                 .iter()
                 .map(|actions| {
@@ -100,10 +104,14 @@ impl KeyPad {
                 })
                 .collect::<Vec<_>>();
 
-            new_routes.insert(*key, new_actions);
+            new_routes.insert(*coords, new_actions);
         }
 
+        let changed = self.routes != new_routes;
+
         self.routes = new_routes;
+
+        changed
     }
 
     pub fn routes(&self, from: Key, to: Key) -> &Vec<Vec<Action>> {
@@ -111,6 +119,10 @@ impl KeyPad {
         let to = self.coords.get(&to).unwrap();
 
         self.routes.get(&(*from, *to)).unwrap()
+    }
+
+    pub fn keys(&self) -> impl Iterator<Item = &Key> {
+        self.keys.values()
     }
 
     fn build_key_routes(&self, from: &Coord, to: &Coord) -> Vec<Vec<Action>> {
@@ -185,10 +197,10 @@ impl KeyPad {
     }
 
     const DIRS: [([isize; 2], Action); 4] = [
-        ([1, 0], Action::Right),
         ([-1, 0], Action::Left),
-        ([0, 1], Action::Down),
         ([0, -1], Action::Up),
+        ([0, 1], Action::Down),
+        ([1, 0], Action::Right),
     ];
 
     fn pos_from(&self, (x, y): Coord) -> impl Iterator<Item = (Coord, Action)> {
