@@ -1,0 +1,34 @@
+66 * 83
+70 * 935
+72 * 964
+76 * 149
+66 * 789
+Part 1: 203734
+Part 2: 0
+       53.69 real        51.97 user         1.67 sys
+          2618802176  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+              384795  page reclaims
+                   1  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                   0  voluntary context switches
+                4373  involuntary context switches
+        854024343273  instructions retired
+        181784480568  cycles elapsed
+          2599065472  peak memory footprint
+------------------------------------------
+Darwin 24.2.0 Darwin Kernel Version 24.2.0: Fri Dec 6 18:51:28 PST 2024; root:xnu-11215.61.5~2/RELEASE_ARM64_T8112 arm64 arm
+rustc 1.85.0-nightly (a4cb3c831 2024-12-17)
+binary: rustc
+commit-hash: a4cb3c831823d9baa56c3d90514b75b2660116fa
+commit-date: 2024-12-17
+host: aarch64-apple-darwin
+release: 1.85.0-nightly
+LLVM version: 19.1.5
