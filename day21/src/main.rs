@@ -45,6 +45,15 @@ fn part2(input: &[InputEnt]) -> u64 {
 }
 
 fn build_keypads(count: usize) -> Vec<KeyPad> {
+    let mut dirkeypad = KeyPad::new(3, 2);
+    // (0,0) empty
+    dirkeypad.setkey((1, 0), Key::Action(Action::Up));
+    dirkeypad.setkey((2, 0), Key::Action(Action::Activate));
+    dirkeypad.setkey((0, 1), Key::Action(Action::Left));
+    dirkeypad.setkey((1, 1), Key::Action(Action::Down));
+    dirkeypad.setkey((2, 1), Key::Action(Action::Right));
+    dirkeypad.build_routes(None);
+
     let mut numkeypad = KeyPad::new(3, 4);
     numkeypad.setkey((0, 0), Key::Char('7'));
     numkeypad.setkey((1, 0), Key::Char('8'));
@@ -58,16 +67,7 @@ fn build_keypads(count: usize) -> Vec<KeyPad> {
     // (0,3) empty
     numkeypad.setkey((1, 3), Key::Char('0'));
     numkeypad.setkey((2, 3), Key::Action(Action::Activate));
-    numkeypad.build_routes();
-
-    let mut dirkeypad = KeyPad::new(3, 2);
-    // (0,0) empty
-    dirkeypad.setkey((1, 0), Key::Action(Action::Up));
-    dirkeypad.setkey((2, 0), Key::Action(Action::Activate));
-    dirkeypad.setkey((0, 1), Key::Action(Action::Left));
-    dirkeypad.setkey((1, 1), Key::Action(Action::Down));
-    dirkeypad.setkey((2, 1), Key::Action(Action::Right));
-    dirkeypad.build_routes();
+    numkeypad.build_routes(Some(&dirkeypad));
 
     let mut keypads = vec![numkeypad];
 
@@ -78,21 +78,17 @@ fn build_keypads(count: usize) -> Vec<KeyPad> {
     keypads
 }
 
-#[derive(Debug, Clone)]
-struct Solution {
-    action_cnt: Vec<u64>,
-}
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+struct Solution(Vec<u64>);
 
 fn press_keys(keypads: &[KeyPad], keys: &[Key]) -> u64 {
-    let solution = Solution {
-        action_cnt: vec![0; keypads.len()],
-    };
+    let solution = Solution(vec![0; keypads.len()]);
 
     let (_, solutions) = press_keys_pad(keypads, 0, keys, solution);
 
     let min = solutions
         .iter()
-        .map(|s| s.action_cnt[keypads.len() - 1])
+        .map(|s| s.0[keypads.len() - 1])
         .min()
         .unwrap();
 
@@ -140,11 +136,16 @@ fn press_keys_key(
             // Recurse
             let mut new_solution = solution.clone();
 
-            new_solution.action_cnt[pad + 1] += path.len() as u64;
+            new_solution.0[pad + 1] += path.len() as u64;
 
             let keys = convert_actions_to_keys(path);
 
-            let (_, solutions) = press_keys_pad(keypads, pad + 1, &keys, new_solution);
+            let (_, mut solutions) = press_keys_pad(keypads, pad + 1, &keys, new_solution);
+
+            solutions.sort();
+            if solutions.windows(2).any(|a| a[0] != a[1]) {
+                println!("{solutions:?}")
+            }
 
             new_solutions.extend(solutions);
         }

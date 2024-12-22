@@ -44,18 +44,66 @@ impl KeyPad {
         self.coords.insert(key, pos);
     }
 
-    pub fn build_routes(&mut self) {
+    pub fn build_routes(&mut self, parent: Option<&KeyPad>) {
         for (from_pos, from_key) in &self.keys {
             for (to_pos, to_key) in &self.keys {
-                let route = if from_key == to_key {
-                    vec![vec![Action::Activate]]
-                } else {
-                    self.build_key_routes(from_pos, to_pos)
-                };
-
-                self.routes.insert((*from_pos, *to_pos), route);
+                self.routes.insert(
+                    (*from_pos, *to_pos),
+                    if from_key == to_key {
+                        vec![vec![Action::Activate]]
+                    } else {
+                        self.build_key_routes(from_pos, to_pos)
+                    },
+                );
             }
         }
+
+        self.optimise_routes(parent);
+    }
+
+    fn optimise_routes(&mut self, parent: Option<&KeyPad>) {
+        let mut new_routes = FxHashMap::default();
+
+        for (key, routes) in &self.routes {
+            let expanded = routes
+                .iter()
+                .map(|actions| {
+                    let mut cur = Key::Action(Action::Activate);
+                    let mut length = 0;
+
+                    for action in actions {
+                        let key = Key::Action(*action);
+
+                        length += if let Some(parent) = parent {
+                            parent.routes(cur, key)[0].len()
+                        } else {
+                            self.routes(cur, key)[0].len()
+                        };
+
+                        cur = key;
+                    }
+
+                    (length, actions)
+                })
+                .collect::<Vec<_>>();
+
+            let min = expanded.iter().map(|(len, _)| len).min().copied().unwrap();
+
+            let new_actions = expanded
+                .into_iter()
+                .filter_map(|(len, actions)| {
+                    if len == min {
+                        Some(actions.clone())
+                    } else {
+                        None
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            new_routes.insert(*key, new_actions);
+        }
+
+        self.routes = new_routes;
     }
 
     pub fn routes(&self, from: Key, to: Key) -> &Vec<Vec<Action>> {
