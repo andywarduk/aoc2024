@@ -15,7 +15,7 @@ pub enum Action {
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum Key {
-    Char(char),
+    Num(u8),
     Action(Action),
 }
 
@@ -40,31 +40,35 @@ impl KeyPad {
     }
 
     pub fn setkey(&mut self, pos: Coord, key: Key) {
+        // Set key at coordinate
         self.keys.insert(pos, key);
         self.coords.insert(key, pos);
     }
 
     pub fn build_routes(&mut self, parent: Option<&KeyPad>) {
-        for (from_pos, from_key) in &self.keys {
-            for (to_pos, to_key) in &self.keys {
+        // Loop each position
+        for from_pos in self.keys.keys() {
+            // Loop each position
+            for to_pos in self.keys.keys() {
+                // Calculate routes from key to key
                 self.routes.insert(
                     (*from_pos, *to_pos),
-                    if from_key == to_key {
-                        vec![vec![Action::Activate]]
-                    } else {
-                        self.build_key_routes(from_pos, to_pos)
-                    },
+                    self.build_key_routes(from_pos, to_pos),
                 );
             }
         }
 
+        // Optimise the routes using the parent keypad
         self.optimise_routes(parent);
     }
 
     fn optimise_routes(&mut self, parent: Option<&KeyPad>) {
+        // Create new routes hashmap
         let mut new_routes = FxHashMap::default();
 
+        // Iterate the current routes
         for (coords, routes) in &self.routes {
+            // Expand each route in to number of parent keypad key presses
             let expanded = routes
                 .iter()
                 .map(|actions| {
@@ -87,8 +91,10 @@ impl KeyPad {
                 })
                 .collect::<Vec<_>>();
 
+            // Get the minimum length
             let min = expanded.iter().map(|(len, _)| len).min().copied().unwrap();
 
+            // Filter by minimum length
             let new_actions = expanded
                 .into_iter()
                 .filter_map(|(len, actions)| {
@@ -100,21 +106,25 @@ impl KeyPad {
                 })
                 .collect::<Vec<_>>();
 
+            // Add to new route map
             new_routes.insert(*coords, new_actions);
         }
 
+        // Set new routes
         self.routes = new_routes;
     }
 
     pub fn routes(&self, from: Key, to: Key) -> &Vec<Vec<Action>> {
+        // Convert keys to coordinates
         let from = self.coords.get(&from).unwrap();
         let to = self.coords.get(&to).unwrap();
 
+        // Get the routes
         self.routes.get(&(*from, *to)).unwrap()
     }
 
     fn build_key_routes(&self, from: &Coord, to: &Coord) -> Vec<Vec<Action>> {
-        // initialise work queue
+        // Initialise work queue
         let mut queue = VecDeque::new();
 
         queue.push_back(Work {
@@ -169,10 +179,13 @@ impl KeyPad {
                 visited.insert(work.coord, work.path.len());
             }
 
+            // Loop next positions
             for (next, action) in self.pos_from(work.coord) {
+                // Build new path
                 let mut next_path = work.path.clone();
                 next_path.push(action);
 
+                // Add to work queue
                 queue.push_back(Work {
                     coord: next,
                     cost: work.cost + 1,
@@ -181,6 +194,7 @@ impl KeyPad {
             }
         }
 
+        // Return next paths
         best_paths
     }
 
@@ -196,6 +210,7 @@ impl KeyPad {
             match x.checked_add_signed(*dx) {
                 Some(nx) if nx < self.width => match y.checked_add_signed(*dy) {
                     Some(ny) if ny < self.height => {
+                        // Check this coordinate contains a key
                         if self.keys.contains_key(&(nx, ny)) {
                             return Some(((nx, ny), *action));
                         }

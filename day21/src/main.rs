@@ -42,12 +42,12 @@ fn solve_chain(input: &[InputEnt], count: usize) -> u64 {
             let val = keys
                 .iter()
                 .filter_map(|k| match k {
-                    Key::Char(c) if c.is_ascii_digit() => Some(*c as u8 - b'0'),
+                    Key::Num(c) => Some(*c as u64),
                     _ => None,
                 })
                 .rev()
                 .enumerate()
-                .fold(0, |acc, (i, d)| acc + (d as u64 * 10u64.pow(i as u32)));
+                .fold(0, |acc, (i, d)| acc + (d * 10u64.pow(i as u32)));
 
             // Multiply together
             len * val
@@ -68,17 +68,17 @@ fn build_keypads(count: usize) -> Vec<KeyPad> {
 
     // Create numeric keypad
     let mut numkeypad = KeyPad::new(3, 4);
-    numkeypad.setkey((0, 0), Key::Char('7'));
-    numkeypad.setkey((1, 0), Key::Char('8'));
-    numkeypad.setkey((2, 0), Key::Char('9'));
-    numkeypad.setkey((0, 1), Key::Char('4'));
-    numkeypad.setkey((1, 1), Key::Char('5'));
-    numkeypad.setkey((2, 1), Key::Char('6'));
-    numkeypad.setkey((0, 2), Key::Char('1'));
-    numkeypad.setkey((1, 2), Key::Char('2'));
-    numkeypad.setkey((2, 2), Key::Char('3'));
+    numkeypad.setkey((0, 0), Key::Num(7));
+    numkeypad.setkey((1, 0), Key::Num(8));
+    numkeypad.setkey((2, 0), Key::Num(9));
+    numkeypad.setkey((0, 1), Key::Num(4));
+    numkeypad.setkey((1, 1), Key::Num(5));
+    numkeypad.setkey((2, 1), Key::Num(6));
+    numkeypad.setkey((0, 2), Key::Num(1));
+    numkeypad.setkey((1, 2), Key::Num(2));
+    numkeypad.setkey((2, 2), Key::Num(3));
     // (0,3) empty
-    numkeypad.setkey((1, 3), Key::Char('0'));
+    numkeypad.setkey((1, 3), Key::Num(0));
     numkeypad.setkey((2, 3), Key::Action(Action::Activate));
     numkeypad.build_routes(Some(&dirkeypad));
 
@@ -193,7 +193,7 @@ fn input_transform(line: String) -> InputEnt {
     line.chars()
         .map(|c| {
             if c.is_ascii_digit() {
-                Key::Char(c)
+                Key::Num(c as u8 - b'0')
             } else {
                 Key::Action(match c {
                     'A' => Action::Activate,
@@ -215,18 +215,19 @@ mod tests {
         let keypads = build_keypads(0);
 
         assert_eq!(
-            keypads[0].routes(Key::Action(Action::Activate), Key::Char('0')),
+            keypads[0].routes(Key::Action(Action::Activate), Key::Num(0)),
             &vec![vec![Action::Left, Action::Activate]]
         );
-        assert_eq!(keypads[0].routes(Key::Char('0'), Key::Char('2')), &vec![
-            vec![Action::Up, Action::Activate]
-        ]);
-        assert_eq!(keypads[0].routes(Key::Char('2'), Key::Char('9')), &vec![
+        assert_eq!(keypads[0].routes(Key::Num(0), Key::Num(2)), &vec![vec![
+            Action::Up,
+            Action::Activate
+        ]]);
+        assert_eq!(keypads[0].routes(Key::Num(2), Key::Num(9)), &vec![
             vec![Action::Up, Action::Up, Action::Right, Action::Activate],
             vec![Action::Right, Action::Up, Action::Up, Action::Activate],
         ]);
         assert_eq!(
-            keypads[0].routes(Key::Char('9'), Key::Action(Action::Activate)),
+            keypads[0].routes(Key::Num(9), Key::Action(Action::Activate)),
             &vec![vec![
                 Action::Down,
                 Action::Down,
