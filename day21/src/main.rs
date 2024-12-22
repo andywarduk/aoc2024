@@ -18,21 +18,27 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn part1(input: &[InputEnt]) -> u64 {
+    // Solve chain of 1 robot numeric keypad, 2 intermediate robot directional keypads and 1 human directional keypad
     solve_chain(input, 2)
 }
 
 fn part2(input: &[InputEnt]) -> u64 {
+    // Solve chain of 1 robot numeric keypad, 25 intermediate robot directional keypads and 1 human directional keypad
     solve_chain(input, 25)
 }
 
 fn solve_chain(input: &[InputEnt], count: usize) -> u64 {
+    // Buld keypad chain
     let keypads = build_keypads(count);
 
+    // Iterate key sequences for numeric keypad
     input
         .iter()
         .map(|keys| {
+            // Calculate the fewest number of keys pressed on the human directional keypad
             let len = press_keys(&keypads, keys);
 
+            // Calculate the value of the numeric part of the typed code
             let val = keys
                 .iter()
                 .filter_map(|k| match k {
@@ -43,13 +49,14 @@ fn solve_chain(input: &[InputEnt], count: usize) -> u64 {
                 .enumerate()
                 .fold(0, |acc, (i, d)| acc + (d as u64 * 10u64.pow(i as u32)));
 
-            println!("{} * {}", len, val);
+            // Multiply together
             len * val
         })
         .sum()
 }
 
 fn build_keypads(count: usize) -> Vec<KeyPad> {
+    // Create directional keypad
     let mut dirkeypad = KeyPad::new(3, 2);
     // (0,0) empty
     dirkeypad.setkey((1, 0), Key::Action(Action::Up));
@@ -59,6 +66,7 @@ fn build_keypads(count: usize) -> Vec<KeyPad> {
     dirkeypad.setkey((2, 1), Key::Action(Action::Right));
     dirkeypad.build_routes(None);
 
+    // Create numeric keypad
     let mut numkeypad = KeyPad::new(3, 4);
     numkeypad.setkey((0, 0), Key::Char('7'));
     numkeypad.setkey((1, 0), Key::Char('8'));
@@ -74,8 +82,10 @@ fn build_keypads(count: usize) -> Vec<KeyPad> {
     numkeypad.setkey((2, 3), Key::Action(Action::Activate));
     numkeypad.build_routes(Some(&dirkeypad));
 
+    // Create vector of keypads starting with the numeric keypad
     let mut keypads = vec![numkeypad];
 
+    // Add intermediate keypads and human controlled keypad
     for _ in 0..=count {
         keypads.push(dirkeypad.clone());
     }
@@ -84,8 +94,10 @@ fn build_keypads(count: usize) -> Vec<KeyPad> {
 }
 
 fn press_keys(keypads: &[KeyPad], keys: &[Key]) -> u64 {
+    // Create a cache of (pad, key from, key to) to key sequence length on the human directional keypad
     let mut keys_cache = FxHashMap::default();
 
+    // Process the key sequence
     press_keys_pad(keypads, 0, keys, &mut keys_cache)
 }
 
@@ -96,20 +108,29 @@ fn press_keys_pad(
     keys_cache: &mut FxHashMap<(usize, Key, Key), u64>,
 ) -> u64 {
     if pad == keypads.len() - 1 {
+        // Last pad - just return the number of keys pressed
         keys.len() as u64
     } else {
+        // Iterate the keys needing to be pressed (always starts at Activate)
         keys.iter()
             .fold(
                 (Key::Action(Action::Activate), 0),
                 |(curkey, solutions), key| {
+                    // Look up in the cache
                     let key_sols = if let Some(key_sols) = keys_cache.get(&(pad, curkey, *key)) {
+                        // Got cached entry
                         *key_sols
                     } else {
+                        // Calculate number of key presses needed on the human directional keypad
                         let key_sols = press_keys_key(keypads, pad, key, curkey, keys_cache);
+
+                        // Insert in to the cache
                         keys_cache.insert((pad, curkey, *key), key_sols);
+
                         key_sols
                     };
 
+                    // Accumulate passing next key and number of key presses so far
                     (*key, solutions + key_sols)
                 },
             )
@@ -124,30 +145,39 @@ fn press_keys_key(
     curkey: Key,
     keys_cache: &mut FxHashMap<(usize, Key, Key), u64>,
 ) -> u64 {
+    // Get all valid shortest paths from key to key
     let paths = keypads[pad].routes(curkey, *key);
 
     let path = if paths.len() > 1 {
-        let mut costs = paths
+        // More than one path - recurse
+        let mut presses = paths
             .iter()
             .enumerate()
             .map(|(i, path)| {
+                // Convert actions to keys
                 let keys = convert_actions_to_keys(path);
 
-                let solution = press_keys_pad(keypads, pad + 1, &keys, keys_cache);
+                // Calculate presses on the next pad recursively
+                let presses = press_keys_pad(keypads, pad + 1, &keys, keys_cache);
 
-                (solution, i)
+                (presses, i)
             })
             .collect::<Vec<_>>();
 
-        costs.sort_by(|a, b| a.0.cmp(&b.0));
+        // Sort the array by number of presses
+        presses.sort_by(|a, b| a.0.cmp(&b.0));
 
-        &paths[costs[0].1]
+        // Return the shortest
+        &paths[presses[0].1]
     } else {
+        // Only one path
         &paths[0]
     };
 
+    // Convert actions to keys
     let keys = convert_actions_to_keys(path);
 
+    // Calculate presses on the next pad recursively
     press_keys_pad(keypads, pad + 1, &keys, keys_cache)
 }
 
@@ -192,8 +222,8 @@ mod tests {
             vec![Action::Up, Action::Activate]
         ]);
         assert_eq!(keypads[0].routes(Key::Char('2'), Key::Char('9')), &vec![
-            vec![Action::Right, Action::Up, Action::Up, Action::Activate],
             vec![Action::Up, Action::Up, Action::Right, Action::Activate],
+            vec![Action::Right, Action::Up, Action::Up, Action::Activate],
         ]);
         assert_eq!(
             keypads[0].routes(Key::Char('9'), Key::Action(Action::Activate)),

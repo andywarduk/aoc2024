@@ -58,14 +58,10 @@ impl KeyPad {
             }
         }
 
-        loop {
-            if !dbg!(self.optimise_routes(parent)) {
-                break;
-            };
-        }
+        self.optimise_routes(parent);
     }
 
-    fn optimise_routes(&mut self, parent: Option<&KeyPad>) -> bool {
+    fn optimise_routes(&mut self, parent: Option<&KeyPad>) {
         let mut new_routes = FxHashMap::default();
 
         for (coords, routes) in &self.routes {
@@ -107,11 +103,7 @@ impl KeyPad {
             new_routes.insert(*coords, new_actions);
         }
 
-        let changed = self.routes != new_routes;
-
         self.routes = new_routes;
-
-        changed
     }
 
     pub fn routes(&self, from: Key, to: Key) -> &Vec<Vec<Action>> {
@@ -119,10 +111,6 @@ impl KeyPad {
         let to = self.coords.get(&to).unwrap();
 
         self.routes.get(&(*from, *to)).unwrap()
-    }
-
-    pub fn keys(&self) -> impl Iterator<Item = &Key> {
-        self.keys.values()
     }
 
     fn build_key_routes(&self, from: &Coord, to: &Coord) -> Vec<Vec<Action>> {
