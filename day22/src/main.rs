@@ -14,14 +14,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+const ITERS: usize = 2000;
+
 fn part1(input: &[u64]) -> u64 {
     input
         .iter()
         .map(|line| {
             let mut secret = *line;
 
-            // Do 2000 hash iterations
-            for _ in 0..2000 {
+            // Do hash iterations
+            for _ in 0..ITERS {
                 hashstep(&mut secret);
             }
 
@@ -38,7 +40,7 @@ fn part2(input: &[u64]) -> u64 {
         // Calculate 2000 prices
         let mut secret = *line;
 
-        let prices = (0..2000)
+        let prices = (0..ITERS)
             .map(|_| {
                 hashstep(&mut secret);
                 secret % 10
@@ -52,7 +54,8 @@ fn part2(input: &[u64]) -> u64 {
             .collect::<Vec<_>>();
 
         // Build map of 4 price changes to number of bananas
-        let mut lhashmap: FxHashMap<[i8; 4], u64> = FxHashMap::default();
+        let mut lhashmap: FxHashMap<[i8; 4], u64> =
+            FxHashMap::with_capacity_and_hasher(diffs.len(), Default::default());
         let mut diffcpy: [i8; 4] = [0; 4];
 
         for dn in 0..(diffs.len() - 3) {
