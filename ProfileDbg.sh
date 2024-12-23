@@ -12,13 +12,10 @@ fi
 
 daypad="$(printf %02d $1)"
 
+shift
+
 mkdir -p flamegraphs >/dev/null 2>&1
 
 file=flamegraphs/day$daypad-dbg.svg
 
-cargo flamegraph -F 3997 --root --dev --bin day$daypad --output "$file"
-
-if [ $? -eq 0 ]
-then
-	open "$file"
-fi
+cargo flamegraph -F 3997 --root --open --dev --bin day$daypad --output "$file" $*
