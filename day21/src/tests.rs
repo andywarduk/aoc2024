@@ -7,27 +7,27 @@ fn test1() {
     let (numkeypad, dirkeypad) = build_keypads();
     let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 0);
 
-    assert_eq!(
-        keypads[0].routes(Key::Action(Action::Activate), Key::Num(0)),
-        &vec![vec![Action::Left, Action::Activate]]
-    );
-    assert_eq!(keypads[0].routes(Key::Num(0), Key::Num(2)), &vec![vec![
-        Action::Up,
-        Action::Activate
+    use keypad::Action::*;
+    use keypad::Key::*;
+
+    assert_eq!(keypads[0].routes(Action(Activate), Num(0)), &vec![vec![
+        Action(Left),
+        Action(Activate)
     ]]);
-    assert_eq!(keypads[0].routes(Key::Num(2), Key::Num(9)), &vec![
-        vec![Action::Up, Action::Up, Action::Right, Action::Activate],
-        vec![Action::Right, Action::Up, Action::Up, Action::Activate],
+    assert_eq!(keypads[0].routes(Num(0), Num(2)), &vec![vec![
+        Action(Up),
+        Action(Activate)
+    ]]);
+    assert_eq!(keypads[0].routes(Num(2), Num(9)), &vec![
+        vec![Action(Up), Action(Up), Action(Right), Action(Activate)],
+        vec![Action(Right), Action(Up), Action(Up), Action(Activate)],
     ]);
-    assert_eq!(
-        keypads[0].routes(Key::Num(9), Key::Action(Action::Activate)),
-        &vec![vec![
-            Action::Down,
-            Action::Down,
-            Action::Down,
-            Action::Activate
-        ]]
-    );
+    assert_eq!(keypads[0].routes(Num(9), Action(Activate)), &vec![vec![
+        Action(Down),
+        Action(Down),
+        Action(Down),
+        Action(Activate)
+    ]]);
 }
 
 #[test]
@@ -38,7 +38,7 @@ fn test2() {
 
     let keys = input_transform("029A".to_string());
 
-    let min = press_keys(&keypads, &keys, &mut keys_cache);
+    let min = press_keys(&keypads, 0, &keys, &mut keys_cache);
 
     assert_eq!(12, min);
 }
@@ -51,7 +51,7 @@ fn test3() {
 
     let keys = input_transform("029A".to_string());
 
-    let min = press_keys(&keypads, &keys, &mut keys_cache);
+    let min = press_keys(&keypads, 0, &keys, &mut keys_cache);
 
     assert_eq!(min, 28);
 }
@@ -64,7 +64,7 @@ fn test4() {
 
     let keys = input_transform("029A".to_string());
 
-    let min = press_keys(&keypads, &keys, &mut keys_cache);
+    let min = press_keys(&keypads, 0, &keys, &mut keys_cache);
 
     assert_eq!(min, 68);
 }

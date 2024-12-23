@@ -34,7 +34,7 @@ pub struct KeyPad {
     height: usize,
     keys: FxHashMap<Coord, Key>,
     coords: FxHashMap<Key, Coord>,
-    routes: FxHashMap<(Coord, Coord), Vec<Vec<Action>>>,
+    routes: FxHashMap<(Coord, Coord), Vec<Vec<Key>>>,
 }
 
 impl KeyPad {
@@ -50,11 +50,12 @@ impl KeyPad {
 
     pub fn setkey(&mut self, pos: Coord, key: Key) {
         // Set key at coordinate
+        assert!(pos.0 < self.width && pos.1 < self.height);
         self.keys.insert(pos, key);
         self.coords.insert(key, pos);
     }
 
-    pub fn build_routes(&mut self, parent: Option<&KeyPad>) {
+    pub fn build_routes(&mut self) {
         // Loop each position
         for from_pos in self.keys.keys() {
             // Loop each position
@@ -66,64 +67,9 @@ impl KeyPad {
                 );
             }
         }
-
-        // Optimise the routes using the parent keypad
-        self.optimise_routes(parent);
     }
 
-    fn optimise_routes(&mut self, parent: Option<&KeyPad>) {
-        // Create new routes hashmap
-        let mut new_routes = FxHashMap::default();
-
-        // Iterate the current routes
-        for (coords, routes) in &self.routes {
-            // Expand each route in to number of parent keypad key presses
-            let expanded = routes
-                .iter()
-                .map(|actions| {
-                    let mut cur = Key::Action(Action::Activate);
-                    let mut length = 0;
-
-                    for action in actions {
-                        let key = Key::Action(*action);
-
-                        length += if let Some(parent) = parent {
-                            parent.routes(cur, key)[0].len()
-                        } else {
-                            self.routes(cur, key)[0].len()
-                        };
-
-                        cur = key;
-                    }
-
-                    (length, actions)
-                })
-                .collect::<Vec<_>>();
-
-            // Get the minimum length
-            let min = expanded.iter().map(|(len, _)| len).min().copied().unwrap();
-
-            // Filter by minimum length
-            let new_actions = expanded
-                .into_iter()
-                .filter_map(|(len, actions)| {
-                    if len == min {
-                        Some(actions.clone())
-                    } else {
-                        None
-                    }
-                })
-                .collect::<Vec<_>>();
-
-            // Add to new route map
-            new_routes.insert(*coords, new_actions);
-        }
-
-        // Set new routes
-        self.routes = new_routes;
-    }
-
-    pub fn routes(&self, from: Key, to: Key) -> &Vec<Vec<Action>> {
+    pub fn routes(&self, from: Key, to: Key) -> &Vec<Vec<Key>> {
         // Convert keys to coordinates
         let from = self.coords.get(&from).unwrap();
         let to = self.coords.get(&to).unwrap();
@@ -132,13 +78,15 @@ impl KeyPad {
         self.routes.get(&(*from, *to)).unwrap()
     }
 
-    fn build_key_routes(&self, from: &Coord, to: &Coord) -> Vec<Vec<Action>> {
+    fn build_key_routes(&self, from: &Coord, to: &Coord) -> Vec<Vec<Key>> {
         // Initialise work queue
         let mut queue = VecDeque::new();
 
         queue.push_back(Work {
             coord: *from,
-            cost: 0,
+            dir: None,
+            steps: 0,
+            dir_changes: 0,
             path: vec![],
         });
 
@@ -154,7 +102,7 @@ impl KeyPad {
             // Reached end point?
             if work.coord == *to {
                 // Yes
-                work.path.push(Action::Activate);
+                work.path.push(Key::Action(Action::Activate));
 
                 match work.path.len().cmp(&best_len) {
                     std::cmp::Ordering::Less => {
@@ -190,15 +138,33 @@ impl KeyPad {
 
             // Loop next positions
             for (next, action) in self.pos_from(work.coord) {
+                // Direction changed?
+                let dir = Some(action);
+                let mut dir_changes = work.dir_changes;
+
+                if dir != work.dir {
+                    dir_changes += 1;
+
+                    // Only allow up to 2 direction changes
+                    if dir_changes > 2 {
+                        continue;
+                    }
+                }
+
+                // Add a step
+                let steps = work.steps + 1;
+
                 // Build new path
-                let mut next_path = work.path.clone();
-                next_path.push(action);
+                let mut path = work.path.clone();
+                path.push(Key::Action(action));
 
                 // Add to work queue
                 queue.push_back(Work {
                     coord: next,
-                    cost: work.cost + 1,
-                    path: next_path,
+                    dir,
+                    steps,
+                    dir_changes,
+                    path,
                 });
             }
         }
@@ -237,6 +203,8 @@ impl KeyPad {
 #[derive(PartialEq, Eq)]
 struct Work {
     coord: Coord,
-    cost: usize,
-    path: Vec<Action>,
+    dir: Option<Action>,
+    steps: u8,
+    dir_changes: u8,
+    path: Vec<Key>,
 }
