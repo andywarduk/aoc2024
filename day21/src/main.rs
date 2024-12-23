@@ -4,7 +4,7 @@ use aoc::input::parse_input_vec;
 use fxhash::FxHashMap;
 
 mod keypad;
-use keypad::{Action, Key, KeyPad};
+use keypad::{Action, Key, KeyPad, KeyPadBuilder};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -68,30 +68,30 @@ fn solve_chain(input: &[InputEnt], count: usize, numkeypad: &KeyPad, dirkeypad: 
 
 fn build_keypads() -> (KeyPad, KeyPad) {
     // Create numeric keypad
-    let mut numkeypad = KeyPad::new(3, 4);
-    numkeypad.setkey((0, 0), Key::Num(7));
-    numkeypad.setkey((1, 0), Key::Num(8));
-    numkeypad.setkey((2, 0), Key::Num(9));
-    numkeypad.setkey((0, 1), Key::Num(4));
-    numkeypad.setkey((1, 1), Key::Num(5));
-    numkeypad.setkey((2, 1), Key::Num(6));
-    numkeypad.setkey((0, 2), Key::Num(1));
-    numkeypad.setkey((1, 2), Key::Num(2));
-    numkeypad.setkey((2, 2), Key::Num(3));
-    // (0,3) empty
-    numkeypad.setkey((1, 3), Key::Num(0));
-    numkeypad.setkey((2, 3), Key::Action(Action::Activate));
-    numkeypad.build_routes();
+    let numkeypad = KeyPadBuilder::new(3, 4)
+        .setkey((0, 0), Key::Num(7))
+        .setkey((1, 0), Key::Num(8))
+        .setkey((2, 0), Key::Num(9))
+        .setkey((0, 1), Key::Num(4))
+        .setkey((1, 1), Key::Num(5))
+        .setkey((2, 1), Key::Num(6))
+        .setkey((0, 2), Key::Num(1))
+        .setkey((1, 2), Key::Num(2))
+        .setkey((2, 2), Key::Num(3))
+        // (0,3) empty
+        .setkey((1, 3), Key::Num(0))
+        .setkey((2, 3), Key::Action(Action::Activate))
+        .build();
 
     // Create directional keypad
-    let mut dirkeypad = KeyPad::new(3, 2);
-    // (0,0) empty
-    dirkeypad.setkey((1, 0), Key::Action(Action::Up));
-    dirkeypad.setkey((2, 0), Key::Action(Action::Activate));
-    dirkeypad.setkey((0, 1), Key::Action(Action::Left));
-    dirkeypad.setkey((1, 1), Key::Action(Action::Down));
-    dirkeypad.setkey((2, 1), Key::Action(Action::Right));
-    dirkeypad.build_routes();
+    let dirkeypad = KeyPadBuilder::new(3, 2)
+        // (0,0) empty
+        .setkey((1, 0), Key::Action(Action::Up))
+        .setkey((2, 0), Key::Action(Action::Activate))
+        .setkey((0, 1), Key::Action(Action::Left))
+        .setkey((1, 1), Key::Action(Action::Down))
+        .setkey((2, 1), Key::Action(Action::Right))
+        .build();
 
     (numkeypad, dirkeypad)
 }

@@ -30,45 +30,11 @@ impl std::fmt::Display for Key {
 
 #[derive(Debug, Clone)]
 pub struct KeyPad {
-    width: usize,
-    height: usize,
-    keys: FxHashMap<Coord, Key>,
     coords: FxHashMap<Key, Coord>,
     routes: FxHashMap<(Coord, Coord), Vec<Vec<Key>>>,
 }
 
 impl KeyPad {
-    pub fn new(w: usize, h: usize) -> Self {
-        Self {
-            width: w,
-            height: h,
-            keys: FxHashMap::default(),
-            coords: FxHashMap::default(),
-            routes: FxHashMap::default(),
-        }
-    }
-
-    pub fn setkey(&mut self, pos: Coord, key: Key) {
-        // Set key at coordinate
-        assert!(pos.0 < self.width && pos.1 < self.height);
-        self.keys.insert(pos, key);
-        self.coords.insert(key, pos);
-    }
-
-    pub fn build_routes(&mut self) {
-        // Loop each position
-        for from_pos in self.keys.keys() {
-            // Loop each position
-            for to_pos in self.keys.keys() {
-                // Calculate routes from key to key
-                self.routes.insert(
-                    (*from_pos, *to_pos),
-                    self.build_key_routes(from_pos, to_pos),
-                );
-            }
-        }
-    }
-
     pub fn routes(&self, from: Key, to: Key) -> &Vec<Vec<Key>> {
         // Convert keys to coordinates
         let from = self.coords.get(&from).unwrap();
@@ -77,12 +43,63 @@ impl KeyPad {
         // Get the routes
         self.routes.get(&(*from, *to)).unwrap()
     }
+}
+
+pub struct KeyPadBuilder {
+    width: usize,
+    height: usize,
+    keys: FxHashMap<Coord, Key>,
+    coords: FxHashMap<Key, Coord>,
+}
+
+impl KeyPadBuilder {
+    pub fn new(w: usize, h: usize) -> Self {
+        Self {
+            width: w,
+            height: h,
+            keys: FxHashMap::default(),
+            coords: FxHashMap::default(),
+        }
+    }
+
+    pub fn setkey(mut self, pos: Coord, key: Key) -> Self {
+        // Set key at coordinate
+        assert!(pos.0 < self.width && pos.1 < self.height);
+
+        self.keys.insert(pos, key);
+        self.coords.insert(key, pos);
+
+        self
+    }
+
+    pub fn build(self) -> KeyPad {
+        let mut routes = FxHashMap::default();
+
+        // Loop each position
+        for from_pos in self.keys.keys() {
+            // Loop each position
+            for to_pos in self.keys.keys() {
+                // Calculate routes from key to key
+                routes.insert(
+                    (*from_pos, *to_pos),
+                    self.build_key_routes(from_pos, to_pos),
+                );
+            }
+        }
+
+        let mut coords = self.coords;
+        coords.shrink_to_fit();
+
+        routes.shrink_to_fit();
+
+        KeyPad { coords, routes }
+    }
 
     fn build_key_routes(&self, from: &Coord, to: &Coord) -> Vec<Vec<Key>> {
         // Initialise work queue
         let mut queue = VecDeque::new();
 
-        queue.push_back(Work {
+        queue.push_back(BuildWork {
             coord: *from,
             dir: None,
             steps: 0,
@@ -159,7 +176,7 @@ impl KeyPad {
                 path.push(Key::Action(action));
 
                 // Add to work queue
-                queue.push_back(Work {
+                queue.push_back(BuildWork {
                     coord: next,
                     dir,
                     steps,
@@ -201,7 +218,7 @@ impl KeyPad {
 }
 
 #[derive(PartialEq, Eq)]
-struct Work {
+struct BuildWork {
     coord: Coord,
     dir: Option<Action>,
     steps: u8,
