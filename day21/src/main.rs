@@ -2,9 +2,9 @@ use std::error::Error;
 
 use aoc::input::parse_input_vec;
 use fxhash::FxHashMap;
-use keypad::{Action, Key, KeyPad};
 
 mod keypad;
+use keypad::{Action, Key, KeyPad};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -34,10 +34,10 @@ fn solve_chain(input: &[InputEnt], count: usize, numkeypad: &KeyPad, dirkeypad: 
     let keypads = build_keypad_chain(numkeypad, dirkeypad, count);
 
     // Create a cache of (pad, key from, key to) to key sequence length on the human directional keypad
-    let mut keys_cache = FxHashMap::default();
+    let mut keys_cache = KeysCache::default();
 
     // Iterate key sequences for numeric keypad
-    input
+    let result = input
         .iter()
         .map(|keys| {
             // Calculate the fewest number of keys pressed on the human directional keypad
@@ -57,7 +57,12 @@ fn solve_chain(input: &[InputEnt], count: usize, numkeypad: &KeyPad, dirkeypad: 
             // Multiply together
             len * val
         })
-        .sum()
+        .sum();
+
+    #[cfg(debug_assertions)]
+    keys_cache.dump();
+
+    result
 }
 
 fn build_keypads() -> (KeyPad, KeyPad) {
@@ -102,21 +107,58 @@ fn build_keypad_chain(numkeypad: &KeyPad, dirkeypad: &KeyPad, count: usize) -> V
     keypads
 }
 
-fn press_keys(
-    keypads: &[KeyPad],
-    keys: &[Key],
-    keys_cache: &mut FxHashMap<(usize, Key, Key), u64>,
-) -> u64 {
+#[derive(Debug, Default)]
+struct KeysCache {
+    map: FxHashMap<(usize, Key, Key), u64>,
+    #[cfg(debug_assertions)]
+    lookup_count: FxHashMap<(usize, Key, Key), u64>,
+}
+
+impl KeysCache {
+    fn add(&mut self, pad: usize, key_from: Key, key_to: Key, count: u64) {
+        self.map.insert((pad, key_from, key_to), count);
+    }
+
+    fn lookup(&mut self, pad: usize, key_from: Key, key_to: Key) -> Option<&u64> {
+        let result = self.map.get(&(pad, key_from, key_to));
+
+        #[cfg(debug_assertions)]
+        if result.is_some() {
+            *(self
+                .lookup_count
+                .entry((pad, key_from, key_to))
+                .or_insert(0)) += 1;
+        }
+
+        result
+    }
+
+    #[cfg(debug_assertions)]
+    fn dump(&self) {
+        let mut keys = self.map.keys().copied().collect::<Vec<_>>();
+        keys.sort();
+
+        println!("key cache ({} entries):", keys.len());
+
+        for (pad, key_from, key_to) in keys {
+            println!(
+                "  pad {pad} from {key_from} to {key_to} : presses {}, lookups {}",
+                *(self.map.get(&(pad, key_from, key_to)).unwrap()),
+                *(self
+                    .lookup_count
+                    .get(&(pad, key_from, key_to))
+                    .unwrap_or(&0))
+            )
+        }
+    }
+}
+
+fn press_keys(keypads: &[KeyPad], keys: &[Key], keys_cache: &mut KeysCache) -> u64 {
     // Process the key sequence
     press_keys_pad(keypads, 0, keys, keys_cache)
 }
 
-fn press_keys_pad(
-    keypads: &[KeyPad],
-    pad: usize,
-    keys: &[Key],
-    keys_cache: &mut FxHashMap<(usize, Key, Key), u64>,
-) -> u64 {
+fn press_keys_pad(keypads: &[KeyPad], pad: usize, keys: &[Key], keys_cache: &mut KeysCache) -> u64 {
     if pad == keypads.len() - 1 {
         // Last pad - just return the number of keys pressed
         keys.len() as u64
@@ -126,18 +168,23 @@ fn press_keys_pad(
             .fold(
                 (Key::Action(Action::Activate), 0),
                 |(curkey, solutions), key| {
-                    // Look up in the cache
-                    let key_sols = if let Some(key_sols) = keys_cache.get(&(pad, curkey, *key)) {
-                        // Got cached entry
-                        *key_sols
+                    let key_sols = if curkey == *key {
+                        // Just the action key needed
+                        1
                     } else {
-                        // Calculate number of key presses needed on the human directional keypad
-                        let key_sols = press_keys_key(keypads, pad, key, curkey, keys_cache);
+                        // Look up in the cache
+                        if let Some(key_sols) = keys_cache.lookup(pad, curkey, *key) {
+                            // Got cached entry
+                            *key_sols
+                        } else {
+                            // Calculate number of key presses needed on the human directional keypad
+                            let key_sols = press_keys_key(keypads, pad, key, curkey, keys_cache);
 
-                        // Insert in to the cache
-                        keys_cache.insert((pad, curkey, *key), key_sols);
+                            // Insert in to the cache
+                            keys_cache.add(pad, curkey, *key, key_sols);
 
-                        key_sols
+                            key_sols
+                        }
                     };
 
                     // Accumulate passing next key and number of key presses so far
@@ -153,7 +200,7 @@ fn press_keys_key(
     pad: usize,
     key: &Key,
     curkey: Key,
-    keys_cache: &mut FxHashMap<(usize, Key, Key), u64>,
+    keys_cache: &mut KeysCache,
 ) -> u64 {
     // Get all valid shortest paths from key to key
     let paths = keypads[pad].routes(curkey, *key);
@@ -215,92 +262,4 @@ fn input_transform(line: String) -> InputEnt {
 }
 
 #[cfg(test)]
-mod tests {
-    use aoc::input::parse_test_vec;
-
-    use super::*;
-
-    #[test]
-    fn test1() {
-        let (numkeypad, dirkeypad) = build_keypads();
-        let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 0);
-
-        assert_eq!(
-            keypads[0].routes(Key::Action(Action::Activate), Key::Num(0)),
-            &vec![vec![Action::Left, Action::Activate]]
-        );
-        assert_eq!(keypads[0].routes(Key::Num(0), Key::Num(2)), &vec![vec![
-            Action::Up,
-            Action::Activate
-        ]]);
-        assert_eq!(keypads[0].routes(Key::Num(2), Key::Num(9)), &vec![
-            vec![Action::Up, Action::Up, Action::Right, Action::Activate],
-            vec![Action::Right, Action::Up, Action::Up, Action::Activate],
-        ]);
-        assert_eq!(
-            keypads[0].routes(Key::Num(9), Key::Action(Action::Activate)),
-            &vec![vec![
-                Action::Down,
-                Action::Down,
-                Action::Down,
-                Action::Activate
-            ]]
-        );
-    }
-
-    #[test]
-    fn test2() {
-        let (numkeypad, dirkeypad) = build_keypads();
-        let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 0);
-        let mut keys_cache = FxHashMap::default();
-
-        let keys = input_transform("029A".to_string());
-
-        let min = press_keys(&keypads, &keys, &mut keys_cache);
-
-        assert_eq!(12, min);
-    }
-
-    #[test]
-    fn test3() {
-        let (numkeypad, dirkeypad) = build_keypads();
-        let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 1);
-        let mut keys_cache = FxHashMap::default();
-
-        let keys = input_transform("029A".to_string());
-
-        let min = press_keys(&keypads, &keys, &mut keys_cache);
-
-        assert_eq!(min, 28);
-    }
-
-    #[test]
-    fn test4() {
-        let (numkeypad, dirkeypad) = build_keypads();
-        let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 2);
-        let mut keys_cache = FxHashMap::default();
-
-        let keys = input_transform("029A".to_string());
-
-        let min = press_keys(&keypads, &keys, &mut keys_cache);
-
-        assert_eq!(min, 68);
-    }
-
-    const EXAMPLE1: &str = "\
-029A
-980A
-179A
-456A
-379A
-";
-
-    #[test]
-    fn test5() {
-        let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
-
-        let (numkeypad, dirkeypad) = build_keypads();
-
-        assert_eq!(part1(&input, &numkeypad, &dirkeypad), 126384);
-    }
-}
+mod tests;

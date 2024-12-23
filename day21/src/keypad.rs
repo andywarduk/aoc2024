@@ -4,19 +4,28 @@ use fxhash::FxHashMap;
 
 type Coord = (usize, usize);
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Action {
+    Activate,
     Up,
     Down,
     Left,
     Right,
-    Activate,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd, Ord)]
 pub enum Key {
-    Num(u8),
     Action(Action),
+    Num(u8),
+}
+
+impl std::fmt::Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Num(n) => f.write_fmt(format_args!("{n}")),
+            Self::Action(a) => f.write_fmt(format_args!("{a:?}")),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
