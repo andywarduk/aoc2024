@@ -37,8 +37,78 @@ tb-vc
 td-yn
 ";
 
+const CONNECTED_3: &str = "\
+aq,cg,yn
+aq,vc,wq
+co,de,ka
+co,de,ta
+co,ka,ta
+de,ka,ta
+kh,qp,ub
+qp,td,wh
+tb,vc,wq
+tc,td,wh
+td,wh,yn
+ub,vc,wq
+";
+
+const CONNECTED_3T: &str = "\
+co,de,ta
+co,ka,ta
+de,ka,ta
+qp,td,wh
+tb,vc,wq
+tc,td,wh
+td,wh,yn
+";
+
 #[test]
 fn test1() {
+    let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
+    let graph = build_graph(input);
+    let connected = CONNECTED_3.lines().collect::<Vec<_>>();
+    let mut found = Vec::new();
+
+    graph.walk(&mut |set| {
+        if set.len() == 3 {
+            found.push(set.join(","));
+            false
+        } else {
+            true
+        }
+    });
+
+    found.sort();
+
+    assert_eq!(found, connected);
+}
+
+#[test]
+fn test2() {
+    let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
+    let graph = build_graph(input);
+    let connected = CONNECTED_3T.lines().collect::<Vec<_>>();
+    let mut found = Vec::new();
+
+    graph.walk(&mut |set| {
+        if set.len() == 3 {
+            if set.iter().any(|n| n.starts_with('t')) {
+                found.push(set.join(","));
+            }
+
+            false
+        } else {
+            true
+        }
+    });
+
+    found.sort();
+
+    assert_eq!(found, connected);
+}
+
+#[test]
+fn test3() {
     let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
     let graph = build_graph(input);
 
