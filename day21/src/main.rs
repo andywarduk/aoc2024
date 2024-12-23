@@ -33,12 +33,15 @@ fn solve_chain(input: &[InputEnt], count: usize, numkeypad: &KeyPad, dirkeypad: 
     // Buld keypad chain
     let keypads = build_keypad_chain(numkeypad, dirkeypad, count);
 
+    // Create a cache of (pad, key from, key to) to key sequence length on the human directional keypad
+    let mut keys_cache = FxHashMap::default();
+
     // Iterate key sequences for numeric keypad
     input
         .iter()
         .map(|keys| {
             // Calculate the fewest number of keys pressed on the human directional keypad
-            let len = press_keys(&keypads, keys);
+            let len = press_keys(&keypads, keys, &mut keys_cache);
 
             // Calculate the value of the numeric part of the typed code
             let val = keys
@@ -99,12 +102,13 @@ fn build_keypad_chain(numkeypad: &KeyPad, dirkeypad: &KeyPad, count: usize) -> V
     keypads
 }
 
-fn press_keys(keypads: &[KeyPad], keys: &[Key]) -> u64 {
-    // Create a cache of (pad, key from, key to) to key sequence length on the human directional keypad
-    let mut keys_cache = FxHashMap::default();
-
+fn press_keys(
+    keypads: &[KeyPad],
+    keys: &[Key],
+    keys_cache: &mut FxHashMap<(usize, Key, Key), u64>,
+) -> u64 {
     // Process the key sequence
-    press_keys_pad(keypads, 0, keys, &mut keys_cache)
+    press_keys_pad(keypads, 0, keys, keys_cache)
 }
 
 fn press_keys_pad(
@@ -248,10 +252,11 @@ mod tests {
     fn test2() {
         let (numkeypad, dirkeypad) = build_keypads();
         let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 0);
+        let mut keys_cache = FxHashMap::default();
 
         let keys = input_transform("029A".to_string());
 
-        let min = press_keys(&keypads, &keys);
+        let min = press_keys(&keypads, &keys, &mut keys_cache);
 
         assert_eq!(12, min);
     }
@@ -260,10 +265,11 @@ mod tests {
     fn test3() {
         let (numkeypad, dirkeypad) = build_keypads();
         let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 1);
+        let mut keys_cache = FxHashMap::default();
 
         let keys = input_transform("029A".to_string());
 
-        let min = press_keys(&keypads, &keys);
+        let min = press_keys(&keypads, &keys, &mut keys_cache);
 
         assert_eq!(min, 28);
     }
@@ -272,10 +278,11 @@ mod tests {
     fn test4() {
         let (numkeypad, dirkeypad) = build_keypads();
         let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 2);
+        let mut keys_cache = FxHashMap::default();
 
         let keys = input_transform("029A".to_string());
 
-        let min = press_keys(&keypads, &keys);
+        let min = press_keys(&keypads, &keys, &mut keys_cache);
 
         assert_eq!(min, 68);
     }
