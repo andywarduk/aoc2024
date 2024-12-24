@@ -27,9 +27,9 @@ impl Graph {
             .insert(n1.to_string());
     }
 
-    pub fn walk<F>(&self, cb: &mut F)
+    pub fn walk<'a, F>(&'a self, cb: &mut F)
     where
-        F: FnMut(&Vec<String>) -> bool,
+        F: FnMut(&Vec<&'a str>) -> bool,
     {
         // Create empty node set
         let mut node_set = Vec::new();
@@ -41,9 +41,9 @@ impl Graph {
         }
     }
 
-    fn walk_iter<F>(&self, cb: &mut F, node: &str, set: &mut Vec<String>)
+    fn walk_iter<'a, F>(&'a self, cb: &mut F, node: &'a str, set: &mut Vec<&'a str>)
     where
-        F: FnMut(&Vec<String>) -> bool,
+        F: FnMut(&Vec<&'a str>) -> bool,
     {
         // Get node edges
         let edges = self.edges.get(node).unwrap();
@@ -51,14 +51,14 @@ impl Graph {
         if set.len() > 1 {
             // Make sure this node is connected to all previous
             for node in set.iter() {
-                if !edges.contains(node) {
+                if !edges.contains(*node) {
                     return;
                 }
             }
         }
 
         // Add this node to the set
-        set.push(node.to_string());
+        set.push(node);
 
         if cb(set) {
             // Process edges from this node

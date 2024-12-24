@@ -42,7 +42,7 @@ fn part1(graph: &Graph) -> u64 {
 
 fn part2(graph: &Graph) -> String {
     let mut largest_len = 0;
-    let mut largest_set = Vec::new();
+    let mut largest_set: Vec<&str> = Vec::new();
 
     // Walk the graph finding sets of interconnected nodes
     graph.walk(&mut |set| {
