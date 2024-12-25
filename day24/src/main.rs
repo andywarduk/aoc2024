@@ -82,7 +82,9 @@ fn part2(circuit: &mut Circuit) -> String {
         // Check the circuit
         let incorrect = check_circuit(circuit);
 
-        if !incorrect.is_empty() {
+        if incorrect.is_empty() {
+            println!("Circuit verified");
+        } else {
             panic!("The following bits are incorrect: {incorrect:?}");
         }
     }
@@ -127,8 +129,8 @@ fn follow_bit_input(circuit: &mut Circuit, context: &mut FollowContext, inx: &st
     let gates = circuit.find_gates_with_inconn2(inx, iny);
 
     // Should be 2 - and XOR and an AND
-    let mut got_xor = false;
-    let mut got_and = false;
+    let mut xors = 0;
+    let mut ands = 0;
 
     for g in gates {
         match circuit.gate(g).op() {
@@ -142,7 +144,7 @@ fn follow_bit_input(circuit: &mut Circuit, context: &mut FollowContext, inx: &st
                     follow_half(circuit, context, circuit.gate(g).out_wire())
                 }
 
-                got_xor = true;
+                xors += 1;
             }
             Op::And => {
                 // Got AND gate
@@ -154,7 +156,7 @@ fn follow_bit_input(circuit: &mut Circuit, context: &mut FollowContext, inx: &st
                     follow_carryb(circuit, context, circuit.gate(g).out_wire())
                 }
 
-                got_and = true;
+                ands += 1;
             }
             _ => {
                 // Unexpected gate
@@ -166,14 +168,22 @@ fn follow_bit_input(circuit: &mut Circuit, context: &mut FollowContext, inx: &st
         }
     }
 
-    if !got_xor {
-        // XOR not found
-        follow_err(context, format!("No XOR gate with {inx} and {iny} found"));
+    match xors {
+        0 => follow_err(context, format!("No XOR gate with {inx} and {iny} found")),
+        1 => (),
+        _ => follow_err(
+            context,
+            format!("{xors} XOR gates found with {inx} and {iny}. Expecting 1"),
+        ),
     }
 
-    if !got_and {
-        // AND not found
-        follow_err(context, format!("No AND gate with {inx} and {iny} found"));
+    match ands {
+        0 => follow_err(context, format!("No AND gate with {inx} and {iny} found")),
+        1 => (),
+        _ => follow_err(
+            context,
+            format!("{ands} AND gates found with {inx} and {iny}. Expecting 1"),
+        ),
     }
 }
 
@@ -233,8 +243,8 @@ fn follow_half_or_carry(
     let gates = circuit.find_gates_with_inconn(&wire);
 
     // Should go to XOR and AND
-    let mut got_xor = false;
-    let mut got_and = false;
+    let mut xors = 0;
+    let mut ands = 0;
 
     for g in gates {
         match circuit.gate(g).op() {
@@ -244,7 +254,7 @@ fn follow_half_or_carry(
                     follow_result(context, circuit.gate(g).out_wire());
                 }
 
-                got_xor = true;
+                xors += 1;
             }
             Op::And => {
                 // Found AND
@@ -252,7 +262,7 @@ fn follow_half_or_carry(
                     follow_carrya(circuit, context, circuit.gate(g).out_wire());
                 }
 
-                got_and = true;
+                ands += 1;
             }
             _ => {
                 // Unexpected gate
@@ -269,14 +279,22 @@ fn follow_half_or_carry(
         }
     }
 
-    if !got_xor {
-        // XOR not found
-        follow_err(context, format!("No XOR gate after {desc}"));
+    match xors {
+        0 => follow_err(context, format!("No XOR gate after {desc}")),
+        1 => (),
+        _ => follow_err(
+            context,
+            format!("{xors} XOR gates found after {desc}. Expecting 1"),
+        ),
     }
 
-    if !got_and {
-        // AND not found
-        follow_err(context, format!("No AND gate after {desc}"));
+    match ands {
+        0 => follow_err(context, format!("No AND gate after {desc}")),
+        1 => (),
+        _ => follow_err(
+            context,
+            format!("{ands} AND gates found after {desc}. Expecting 1"),
+        ),
     }
 }
 
@@ -301,14 +319,14 @@ fn follow_carry_ab(circuit: &mut Circuit, context: &mut FollowContext, wire: Str
     let gates = circuit.find_gates_with_inconn(&wire);
 
     // Should go to OR
-    let mut got_or = false;
+    let mut ors = 0;
 
     for g in gates {
         match circuit.gate(g).op() {
             Op::Or => {
                 // Found OR
                 follow_carry(circuit, context, circuit.gate(g).out_wire());
-                got_or = true;
+                ors += 1;
             }
             _ => {
                 // Unexpected gate
@@ -325,15 +343,19 @@ fn follow_carry_ab(circuit: &mut Circuit, context: &mut FollowContext, wire: Str
         }
     }
 
-    if !got_or {
-        // OR not found
-        follow_err(context, format!("No OR gate after {desc}"));
+    match ors {
+        0 => follow_err(context, format!("No OR gate after {desc}")),
+        1 => (),
+        _ => follow_err(
+            context,
+            format!("{ors} OR gates found after {desc}. Expecting 1"),
+        ),
     }
 }
 
 #[cfg(debug_assertions)]
 fn follow_err(context: &FollowContext, msg: String) {
-    println!("ERR: {}: {msg}", context.stack.join(","))
+    println!("ERR: {}: {msg}", context.stack.join(" -> "))
 }
 
 #[cfg(not(debug_assertions))]
