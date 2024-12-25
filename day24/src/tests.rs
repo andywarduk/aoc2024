@@ -15,9 +15,9 @@ x02 OR y02 -> z02
 
 #[test]
 fn test1() {
-    let circuit = parse_input(EXAMPLE1);
+    let mut circuit = parse_input(EXAMPLE1);
 
-    assert_eq!(part1(circuit.clone()), 4);
+    assert_eq!(part1(&mut circuit), 4);
 }
 
 const EXAMPLE2: &str = "\
@@ -72,7 +72,7 @@ tnw OR pbm -> gnj
 
 #[test]
 fn test2() {
-    let circuit = parse_input(EXAMPLE2);
+    let mut circuit = parse_input(EXAMPLE2);
 
-    assert_eq!(part1(circuit.clone()), 2024);
+    assert_eq!(part1(&mut circuit), 2024);
 }
