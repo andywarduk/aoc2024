@@ -4,7 +4,7 @@ use aoc::input::read_input_file;
 use fxhash::{FxHashMap, FxHashSet};
 
 mod circuit;
-use circuit::{Circuit, Gate, Op};
+use circuit::{Circuit, Conn, Edge, Gate, Input, Op, Output};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
@@ -105,10 +105,6 @@ struct FollowContext {
 }
 
 fn follow_bit(circuit: &mut Circuit, bits: usize, bit: usize) -> Vec<String> {
-    // Build input names
-    let inx = Circuit::inoutname('x', bit);
-    let iny = Circuit::inoutname('y', bit);
-
     // Build context
     let mut context = FollowContext {
         bits,
@@ -118,15 +114,19 @@ fn follow_bit(circuit: &mut Circuit, bits: usize, bit: usize) -> Vec<String> {
     };
 
     // Follow input wires
-    follow_bit_input(circuit, &mut context, &inx, &iny);
+    follow_bit_input(circuit, &mut context);
 
     // Convert error hashset to vector
     context.errors.into_iter().collect::<Vec<_>>()
 }
 
-fn follow_bit_input(circuit: &mut Circuit, context: &mut FollowContext, inx: &str, iny: &str) {
+fn follow_bit_input(circuit: &mut Circuit, context: &mut FollowContext) {
+    // Build input names
+    let inx = Circuit::inoutname('x', context.bit);
+    let iny = Circuit::inoutname('y', context.bit);
+
     // Find gates with x and y inputs for this bit
-    let gates = circuit.find_gates_with_inconn2(inx, iny);
+    let gates = circuit.find_gates_with_inconn2(&inx, &iny);
 
     // Should be 2 - and XOR and an AND
     let mut xors = 0;
@@ -138,10 +138,10 @@ fn follow_bit_input(circuit: &mut Circuit, context: &mut FollowContext, inx: &st
                 // Found XOR gate
                 if context.bit == 0 {
                     // Half adder
-                    follow_result(context, circuit.gate(g).out_wire())
+                    follow_result(context, circuit.gate_outwire(g))
                 } else {
                     // Full adder
-                    follow_half(circuit, context, circuit.gate(g).out_wire())
+                    follow_half(circuit, context, circuit.gate_outwire(g))
                 }
 
                 xors += 1;
@@ -150,10 +150,10 @@ fn follow_bit_input(circuit: &mut Circuit, context: &mut FollowContext, inx: &st
                 // Got AND gate
                 if context.bit == 0 {
                     // Half adder
-                    follow_carry(circuit, context, circuit.gate(g).out_wire())
+                    follow_carry(circuit, context, circuit.gate_outwire(g))
                 } else {
                     // Full adder
-                    follow_carryb(circuit, context, circuit.gate(g).out_wire())
+                    follow_carryb(circuit, context, circuit.gate_outwire(g))
                 }
 
                 ands += 1;
@@ -251,7 +251,7 @@ fn follow_half_or_carry(
             Op::Xor => {
                 // Found XOR
                 if follow {
-                    follow_result(context, circuit.gate(g).out_wire());
+                    follow_result(context, circuit.gate_outwire(g));
                 }
 
                 xors += 1;
@@ -259,7 +259,7 @@ fn follow_half_or_carry(
             Op::And => {
                 // Found AND
                 if follow {
-                    follow_carrya(circuit, context, circuit.gate(g).out_wire());
+                    follow_carrya(circuit, context, circuit.gate_outwire(g));
                 }
 
                 ands += 1;
@@ -325,7 +325,7 @@ fn follow_carry_ab(circuit: &mut Circuit, context: &mut FollowContext, wire: Str
         match circuit.gate(g).op() {
             Op::Or => {
                 // Found OR
-                follow_carry(circuit, context, circuit.gate(g).out_wire());
+                follow_carry(circuit, context, circuit.gate_outwire(g));
                 ors += 1;
             }
             _ => {
@@ -386,23 +386,23 @@ fn check_circuit(circuit: &mut Circuit) -> Vec<usize> {
             .any(|&(xbit, ybit, mut expected, carry)| {
                 if !carry || bit != 0 {
                     // Set up inputs
-                    let mut wires = FxHashMap::default();
+                    let mut inputs = Vec::new();
 
                     for i in 0..xbits {
-                        wires.insert(
-                            format!("x{:02}", i),
+                        inputs.push(Input::new(
+                            &format!("x{:02}", i),
                             (carry && i == bit - 1) || (xbit == 1 && i == bit),
-                        );
+                        ));
                     }
 
                     for i in 0..ybits {
-                        wires.insert(
-                            format!("y{:02}", i),
+                        inputs.push(Input::new(
+                            &format!("y{:02}", i),
                             (carry && i == bit - 1) || (ybit == 1 && i == bit),
-                        );
+                        ));
                     }
 
-                    circuit.run_with(wires);
+                    circuit.run_with(&inputs);
 
                     let actual = circuit.get_value('z');
 
@@ -433,54 +433,95 @@ fn check_circuit(circuit: &mut Circuit) -> Vec<usize> {
 // Input parsing
 
 fn parse_input(input: &str) -> Circuit {
-    let mut sections = input.split("\n\n");
+    let mut gate_in = FxHashMap::default();
+    let mut gate_out = FxHashMap::default();
 
-    let s1 = sections.next().unwrap();
-    let s2 = sections.next().unwrap();
+    let mut split = input.split("\n\n");
 
-    let mut init_wires = FxHashMap::default();
-    let mut inconnections: FxHashMap<String, Vec<(usize, usize)>> = FxHashMap::default();
-    let mut outconnections: FxHashMap<String, usize> = FxHashMap::default();
+    // Build inputs from first split
+    let mut inputs = split
+        .next()
+        .unwrap()
+        .lines()
+        .map(|l| {
+            let mut split = l.split(':');
 
-    s1.lines().for_each(|l| {
-        let mut split = l.split(':');
+            let name = split.next().unwrap();
+            let value = split.next().unwrap().trim_start().parse::<u8>().unwrap();
 
-        let name = split.next().unwrap().to_string();
-        let value = split.next().unwrap().trim_start().parse::<u8>().unwrap();
+            Input::new(name, value == 1)
+        })
+        .collect::<Vec<_>>();
 
-        init_wires.insert(name, value == 1);
-    });
+    inputs.sort();
 
-    let gates = s2
+    // Build gates from second split
+    let gates = split
+        .next()
+        .unwrap()
         .lines()
         .enumerate()
         .map(|(num, l)| {
             let mut split = l.split_ascii_whitespace();
 
             let in1 = split.next().unwrap().to_string();
-            let op = match split.next().unwrap() {
-                "AND" => Op::And,
-                "OR" => Op::Or,
-                "XOR" => Op::Xor,
-                _ => panic!("Invalid op"),
-            };
+            let op = split.next().unwrap().to_string();
             let in2 = split.next().unwrap().to_string();
             split.next().unwrap();
-            let out_wire = split.next().unwrap().to_string();
+            let out = split.next().unwrap().to_string();
 
-            let in_wires = [in1.clone(), in2.clone()];
+            gate_in.entry(in1).or_insert_with(Vec::new).push(num);
+            gate_in.entry(in2).or_insert_with(Vec::new).push(num);
 
-            // Add connections
-            inconnections.entry(in1).or_default().push((num, 0));
-            inconnections.entry(in2).or_default().push((num, 1));
+            gate_out.insert(out, num);
 
-            assert!(outconnections.insert(out_wire.clone(), num).is_none());
-
-            Gate::new(in_wires, out_wire, op)
+            Gate::new(&op)
         })
-        .collect();
+        .collect::<Vec<_>>();
 
-    Circuit::new(init_wires, gates, inconnections, outconnections)
+    let mut edges = Vec::new();
+
+    // Build gate in edges
+    for (wire, to_vec) in &gate_in {
+        for &to in to_vec {
+            // Where is this connected from?
+            if let Some(&from) = gate_out.get(wire) {
+                edges.push(Edge::new(wire, Conn::Gate(from), Conn::Gate(to)));
+            } else {
+                // Must be an input
+                let from = inputs
+                    .iter()
+                    .position(|input| input.name() == wire)
+                    .unwrap();
+
+                edges.push(Edge::new(wire, Conn::In(from), Conn::Gate(to)));
+            }
+        }
+    }
+
+    // Build outputs
+    let mut outputs = gate_out
+        .iter()
+        .filter_map(|(wire, _)| {
+            if !gate_in.contains_key(wire) {
+                // Must be an output
+                Some(Output::new(wire))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    outputs.sort();
+
+    // Build gate out edges
+    for (i, output) in outputs.iter().enumerate() {
+        if let Some(&from) = gate_out.get(output.name()) {
+            edges.push(Edge::new(output.name(), Conn::Gate(from), Conn::Out(i)));
+        }
+    }
+
+    Circuit::new(inputs, gates, edges)
 }
 
 #[cfg(test)]

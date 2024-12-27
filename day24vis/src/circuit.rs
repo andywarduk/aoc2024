@@ -1,4 +1,6 @@
-use std::collections::VecDeque;
+use std::fmt::Write;
+use std::fs::write;
+use std::{collections::VecDeque, error::Error};
 
 use fxhash::{FxHashMap, FxHashSet};
 
@@ -118,6 +120,7 @@ impl Output {
 #[derive(Debug)]
 pub struct Circuit {
     inputs: Vec<Input>,
+    outputs: Vec<Output>,
     gates: Vec<Gate>,
     edges: Vec<Edge>,
     wirestate: FxHashMap<String, bool>,
@@ -128,7 +131,12 @@ pub struct Circuit {
 }
 
 impl Circuit {
-    pub fn new(inputs: Vec<Input>, gates: Vec<Gate>, edges: Vec<Edge>) -> Self {
+    pub fn new(
+        inputs: Vec<Input>,
+        outputs: Vec<Output>,
+        gates: Vec<Gate>,
+        edges: Vec<Edge>,
+    ) -> Self {
         let mut wiretogate = FxHashMap::default();
         let mut gatetoinwire = FxHashMap::default();
         let mut wirefromgate = FxHashMap::default();
@@ -155,6 +163,7 @@ impl Circuit {
 
         Self {
             inputs,
+            outputs,
             gates,
             edges,
             wirestate: Default::default(),
@@ -169,17 +178,6 @@ impl Circuit {
         // Set up wire state from inputs
         self.wirestate = self
             .inputs
-            .iter()
-            .map(|input| (input.name.clone(), input.state))
-            .collect();
-
-        self.run_internal();
-    }
-
-    #[allow(unused)]
-    pub fn run_with(&mut self, inputs: &[Input]) {
-        // Set up wire state from passed inputs
-        self.wirestate = inputs
             .iter()
             .map(|input| (input.name.clone(), input.state))
             .collect();
@@ -241,28 +239,6 @@ impl Circuit {
 
     pub fn gate_outwire(&self, gn: usize) -> String {
         self.gatetooutwire.get(&gn).unwrap().to_string()
-    }
-
-    pub fn get_value(&self, prefix: char) -> u64 {
-        let mut result = 0;
-        let mut bit = 0;
-
-        loop {
-            let name = format!("{prefix}{bit:02}");
-
-            match self.wirestate.get(&name) {
-                Some(&value) => {
-                    if value {
-                        result |= 2u64.pow(bit as u32);
-                    }
-                }
-                None => break,
-            }
-
-            bit += 1;
-        }
-
-        result
     }
 
     pub fn count_bits(&self, prefix: char) -> usize {
@@ -339,5 +315,187 @@ impl Circuit {
 
     pub fn inoutname(prefix: char, bit: usize) -> String {
         format!("{prefix}{bit:02}")
+    }
+
+    pub fn dump(
+        &self,
+        file: &str,
+        layout: &[Vec<usize>],
+        carries: &FxHashMap<String, usize>,
+        error_list: &[Vec<String>],
+    ) -> Result<(), Box<dyn Error>> {
+        let mut dotfile = String::new();
+
+        dotfile.write_str("digraph {\n")?;
+        dotfile.write_str("  fontname=\"Helvetica,Arial,sans-serif\";\n")?;
+        dotfile.write_str("  node [fontname=\"Helvetica,Arial,sans-serif\"];\n")?;
+        dotfile.write_str("  edge [fontname=\"Helvetica,Arial,sans-serif\"];\n")?;
+        dotfile.write_str("  rankdir=\"TB\";\n")?;
+        dotfile.write_str("\n")?;
+
+        // Function to return edge style for wire
+        let wire_style = |wire: &str| -> &str {
+            if *self.wirestate.get(wire).unwrap() {
+                "penwidth=2"
+            } else {
+                "penwidth=1"
+            }
+        };
+
+        // Add adder cluster for each bit
+        for (bit, gates) in layout.iter().enumerate() {
+            // Start cluster
+            dotfile.write_fmt(format_args!("  subgraph cluster_{bit} {{\n"))?;
+            dotfile.write_fmt(format_args!("    label=\"bit {bit}\";\n"))?;
+            dotfile.write_str("\n")?;
+
+            // Loop gates in the cluster
+            for g in gates {
+                let gate = &self.gates[*g];
+
+                // Write node for gate
+                dotfile.write_fmt(format_args!(
+                    "    g{} [shape=\"box\" style=\"filled\" fillcolor=\"#8888ff\" label=\"{}\"];\n",
+                    *g, gate.op
+                ))?;
+
+                // Loop all edges
+                for edge in &self.edges {
+                    // Going to this gate?
+                    if matches!(edge.to, Conn::Gate(gn) if gn == *g) {
+                        // Is it an input node?
+                        if let Conn::In(i) = edge.from {
+                            // Add input node
+                            dotfile.write_fmt(format_args!(
+                                "    i{i} [{} shape=\"circle\" style=\"filled\" fillcolor=\"#88ff88\" label=\"{}\"];\n",
+                                wire_style(&self.inputs[i].name),
+                                self.inputs[i].name,
+                            ))?;
+                        }
+                    }
+
+                    // Going from this gate?
+                    if matches!(edge.from, Conn::Gate(gn) if gn == *g) {
+                        // Is it an output node?
+                        if let Conn::Out(o) = edge.to {
+                            // Add output node
+                            dotfile.write_fmt(format_args!(
+                                "    o{o} [{} shape=\"circle\" style=\"filled\" fillcolor=\"#ff8888\" label=\"{}\"];\n",
+                                wire_style(&self.outputs[o].name),
+                                self.outputs[o].name,
+                            ))?;
+                        }
+                    }
+                }
+
+                // Does a carry exist for this bit?
+                if let Some((name, bit)) = carries.iter().find(|(_, c)| **c == bit) {
+                    // Yes - write carry node
+                    dotfile.write_fmt(format_args!(
+                        "    c{bit:02} [{} shape=\"circle\" style=\"filled\" fillcolor=\"#ffff88\"];\n", wire_style(name)
+                    ))?;
+                }
+            }
+
+            // End subgraph
+            dotfile.write_str("  }\n")?;
+            dotfile.write_str("\n")?;
+        }
+
+        // Function to convert connection to node name
+        let conn_to_node = |conn| -> String {
+            match conn {
+                Conn::Gate(n) => format!("g{n}"),
+                Conn::In(n) => format!("i{n}"),
+                Conn::Out(n) => format!("o{n}"),
+            }
+        };
+
+        // Carry been added set
+        let mut carry_added = FxHashSet::default();
+
+        // Add edges
+        for edge in &self.edges {
+            // Is this edge a carry?
+            if let Some(&bit) = carries.get(&edge.name) {
+                // Yes - has the edge from the last gate to carry been added already?
+                if !carry_added.contains(&edge.name) {
+                    // No - add it
+                    dotfile.write_fmt(format_args!(
+                        "  {} -> c{bit:02} [{} headport=\"n\" label=\"{}\"];\n",
+                        conn_to_node(edge.from),
+                        wire_style(&edge.name),
+                        edge.name
+                    ))?;
+
+                    // Mark as added
+                    carry_added.insert(edge.name.clone());
+                }
+
+                // Add edge from carry to destination
+                dotfile.write_fmt(format_args!(
+                    "  c{bit:02} -> {} [{} tailport=\"s\" label=\"{}\"];\n",
+                    conn_to_node(edge.to),
+                    wire_style(&edge.name),
+                    edge.name
+                ))?;
+            } else {
+                // Not a carry - just add the edge
+                dotfile.write_fmt(format_args!(
+                    "  {} -> {} [{} label=\"{}\"];\n",
+                    conn_to_node(edge.from),
+                    conn_to_node(edge.to),
+                    wire_style(&edge.name),
+                    edge.name
+                ))?;
+            }
+        }
+
+        // Add error edges
+        let mut add_error = |wire, g1, g2| -> Result<(), Box<dyn Error>> {
+            // Loop all edges
+            for edge in &self.edges {
+                // Does this edge go from gate 2?
+                if matches!(edge.from, Conn::Gate(gn) if gn == g2) {
+                    // Yes - is this a carry wire?
+                    let target = if let Some(carry) = carries.get(wire) {
+                        // Yes - route to carry
+                        format!("c{:02}", *carry)
+                    } else {
+                        // No - route to gate
+                        conn_to_node(edge.to)
+                    };
+
+                    // Write the error edge
+                    dotfile.write_fmt(format_args!(
+                        "  g{g1} -> {} [fontcolor=\"red\" color=\"red\" weight=\"0\" label=\"{}\"];\n",
+                        target,
+                        wire
+                    ))?;
+                }
+            }
+
+            Ok(())
+        };
+
+        for error in error_list {
+            // Get gates for error swap
+            let gates = [
+                *self.wirefromgate.get(&error[0]).unwrap(),
+                *self.wirefromgate.get(&error[1]).unwrap(),
+            ];
+
+            // Add edges for the error swap
+            add_error(&error[1], gates[0], gates[1])?;
+            add_error(&error[0], gates[1], gates[0])?;
+        }
+
+        // End graph
+        dotfile.write_str("}\n")?;
+
+        // Write dot file
+        write(file, dotfile)?;
+
+        Ok(())
     }
 }

@@ -299,6 +299,7 @@ name = "day24vis"
 version = "0.1.0"
 dependencies = [
  "aoc",
+ "fxhash",
 ]
 
 [[package]]
