@@ -119,7 +119,6 @@ impl Output {
 pub struct Circuit {
     inputs: Vec<Input>,
     gates: Vec<Gate>,
-    edges: Vec<Edge>,
     wirestate: FxHashMap<String, bool>,
     wiretogate: FxHashMap<String, Vec<usize>>,
     gatetoinwire: FxHashMap<usize, Vec<String>>,
@@ -156,7 +155,6 @@ impl Circuit {
         Self {
             inputs,
             gates,
-            edges,
             wirestate: Default::default(),
             wiretogate,
             gatetoinwire,
@@ -248,7 +246,7 @@ impl Circuit {
         let mut bit = 0;
 
         loop {
-            let name = format!("{prefix}{bit:02}");
+            let name = Self::inoutname(prefix, bit);
 
             match self.wirestate.get(&name) {
                 Some(&value) => {
@@ -269,7 +267,7 @@ impl Circuit {
         let mut bit = 0;
 
         loop {
-            let name = format!("{prefix}{bit:02}");
+            let name = Self::inoutname(prefix, bit);
 
             if !self.wirestate.contains_key(&name) {
                 break;
@@ -298,43 +296,29 @@ impl Circuit {
         // Modify maps
         modify(w1, g2);
         modify(w2, g1);
-
-        // Adjust edges
-        self.edges.iter_mut().for_each(|edge| {
-            if let Conn::Gate(g) = edge.from {
-                if g == g1 {
-                    edge.from = Conn::Gate(g2);
-                } else if g == g2 {
-                    edge.from = Conn::Gate(g1);
-                }
-            }
-        })
     }
 
     pub fn find_gates_with_inconn(&self, wire: &str) -> Vec<usize> {
-        self.wiretogate
-            .get(wire)
-            .iter()
-            .flat_map(|vec| vec.iter().copied())
-            .collect::<Vec<_>>()
+        self.find_gates_with_inconn_iter(wire).collect()
     }
 
     pub fn find_gates_with_inconn2(&self, w1: &str, w2: &str) -> Vec<usize> {
         let gates1 = self
-            .wiretogate
-            .get(w1)
-            .iter()
-            .flat_map(|vec| vec.iter().copied())
+            .find_gates_with_inconn_iter(w1)
             .collect::<FxHashSet<_>>();
 
         let gates2 = self
-            .wiretogate
-            .get(w2)
-            .iter()
-            .flat_map(|vec| vec.iter().copied())
+            .find_gates_with_inconn_iter(w2)
             .collect::<FxHashSet<_>>();
 
         gates1.intersection(&gates2).copied().collect::<Vec<_>>()
+    }
+
+    fn find_gates_with_inconn_iter(&self, wire: &str) -> impl Iterator<Item = usize> + '_ {
+        self.wiretogate
+            .get(wire)
+            .into_iter()
+            .flat_map(|vec| vec.iter().copied())
     }
 
     pub fn inoutname(prefix: char, bit: usize) -> String {

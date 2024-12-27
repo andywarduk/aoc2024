@@ -390,14 +390,14 @@ fn check_circuit(circuit: &mut Circuit) -> Vec<usize> {
 
                     for i in 0..xbits {
                         inputs.push(Input::new(
-                            &format!("x{:02}", i),
+                            &Circuit::inoutname('x', i),
                             (carry && i == bit - 1) || (xbit == 1 && i == bit),
                         ));
                     }
 
                     for i in 0..ybits {
                         inputs.push(Input::new(
-                            &format!("y{:02}", i),
+                            &Circuit::inoutname('y', i),
                             (carry && i == bit - 1) || (ybit == 1 && i == bit),
                         ));
                     }

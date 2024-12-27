@@ -245,7 +245,7 @@ impl Circuit {
         let mut bit = 0;
 
         loop {
-            let name = format!("{prefix}{bit:02}");
+            let name = Circuit::inoutname(prefix, bit);
 
             if !self.wirestate.contains_key(&name) {
                 break;
@@ -392,7 +392,9 @@ impl Circuit {
                 if let Some((name, bit)) = carries.iter().find(|(_, c)| **c == bit) {
                     // Yes - write carry node
                     dotfile.write_fmt(format_args!(
-                        "    c{bit:02} [{} shape=\"circle\" style=\"filled\" fillcolor=\"#ffff88\"];\n", wire_style(name)
+                        "    {} [{} shape=\"circle\" style=\"filled\" fillcolor=\"#ffff88\"];\n",
+                        Circuit::inoutname('c', *bit),
+                        wire_style(name)
                     ))?;
                 }
             }
@@ -422,8 +424,9 @@ impl Circuit {
                 if !carry_added.contains(&edge.name) {
                     // No - add it
                     dotfile.write_fmt(format_args!(
-                        "  {} -> c{bit:02} [{} headport=\"n\" label=\"{}\"];\n",
+                        "  {} -> {} [{} headport=\"n\" label=\"{}\"];\n",
                         conn_to_node(edge.from),
+                        Circuit::inoutname('c', bit),
                         wire_style(&edge.name),
                         edge.name
                     ))?;
@@ -434,7 +437,8 @@ impl Circuit {
 
                 // Add edge from carry to destination
                 dotfile.write_fmt(format_args!(
-                    "  c{bit:02} -> {} [{} tailport=\"s\" label=\"{}\"];\n",
+                    "  {} -> {} [{} tailport=\"s\" label=\"{}\"];\n",
+                    Circuit::inoutname('c', bit),
                     conn_to_node(edge.to),
                     wire_style(&edge.name),
                     edge.name
@@ -460,7 +464,7 @@ impl Circuit {
                     // Yes - is this a carry wire?
                     let target = if let Some(carry) = carries.get(wire) {
                         // Yes - route to carry
-                        format!("c{:02}", *carry)
+                        Circuit::inoutname('c', *carry)
                     } else {
                         // No - route to gate
                         conn_to_node(edge.to)
