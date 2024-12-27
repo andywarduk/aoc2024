@@ -86,7 +86,7 @@ fn pos_from(input: &[InputEnt], x: usize, y: usize, h: u8) -> impl Iterator<Item
 
 type InputEnt = Vec<u8>;
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     line.chars().map(|c| c as u8 - b'0').collect()
 }
 

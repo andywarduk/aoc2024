@@ -94,7 +94,7 @@ fn hashstep(secret: &mut u64) {
 
 // Input parsing
 
-fn input_transform(line: String) -> u64 {
+fn input_transform(line: &str) -> u64 {
     line.parse::<u64>().unwrap()
 }
 

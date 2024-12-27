@@ -91,7 +91,6 @@ impl Graph {
         dotfile.write_str("  fontname=\"Helvetica,Arial,sans-serif\";\n")?;
         dotfile.write_str("  node [fontname=\"Helvetica,Arial,sans-serif\"];\n")?;
         dotfile.write_str("  edge [fontname=\"Helvetica,Arial,sans-serif\"];\n")?;
-        // TODO        dotfile.write_str("  rankdir=\"TB\";\n")?;
         dotfile.write_str("\n")?;
 
         // Draw nodes

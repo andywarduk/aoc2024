@@ -110,7 +110,7 @@ fn count(input: &InputEnt, iters: u8) -> u64 {
 
 type InputEnt = Vec<u64>;
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     line.split_ascii_whitespace()
         .map(|ns| ns.parse::<u64>().expect("not an integer"))
         .collect()

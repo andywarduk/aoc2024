@@ -165,7 +165,7 @@ fn pos_from(board: &[Vec<bool>], c: Coord, dim: usize) -> impl Iterator<Item = C
 
 // Input parsing
 
-fn input_transform(line: String) -> Coord {
+fn input_transform(line: &str) -> Coord {
     let mut iter = line.split(",").map(|c| c.parse::<usize>().unwrap());
     (iter.next().unwrap(), iter.next().unwrap())
 }

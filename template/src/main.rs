@@ -25,9 +25,9 @@ fn part2(input: &[InputEnt]) -> u64 {
 
 type InputEnt = String; // TODO
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     // TODO
-    line
+    line.to_string()
 }
 
 #[cfg(test)]

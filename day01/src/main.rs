@@ -31,9 +31,12 @@ fn part2(v1: &[u64], v2: &[u64]) -> u64 {
 
 type InputEnt = Vec<u64>;
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     line.split_ascii_whitespace()
-        .map(|n| n.parse::<u64>().expect("{n} is not an integer"))
+        .map(|n| {
+            n.parse::<u64>()
+                .unwrap_or_else(|_| panic!("{n} is not an integer"))
+        })
         .collect()
 }
 

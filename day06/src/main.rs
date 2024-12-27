@@ -213,7 +213,7 @@ impl Dir {
 
 // Input parsing
 
-fn input_transform(line: String) -> BoardLine {
+fn input_transform(line: &str) -> BoardLine {
     line.chars()
         .map(|c| match c {
             '.' => Space::Empty,

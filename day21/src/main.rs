@@ -231,7 +231,7 @@ fn press_keys_key(
 
 type InputEnt = Vec<Key>;
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     line.chars()
         .map(|c| {
             if c.is_ascii_digit() {

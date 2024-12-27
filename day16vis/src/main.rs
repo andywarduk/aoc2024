@@ -484,7 +484,7 @@ enum MapTile {
 
 type InputEnt = Vec<MapTile>;
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     line.chars()
         .map(|c| match c {
             '.' => MapTile::Empty,

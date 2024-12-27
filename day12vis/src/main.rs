@@ -235,6 +235,6 @@ fn flood_step(input: &[InputEnt], x: usize, y: usize, c: char) -> impl Iterator<
 
 type InputEnt = Vec<char>;
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     line.chars().collect()
 }

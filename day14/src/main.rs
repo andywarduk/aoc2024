@@ -110,9 +110,9 @@ type InputEnt = Robot;
 static RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"p=(\d+),(\d+) v=(-?\d+),(-?\d+)").unwrap());
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     let c: [&str; 4] = RE
-        .captures(&line)
+        .captures(line)
         .map(|c| c.extract())
         .map(|(_, arr)| arr)
         .expect("Pattern not found");

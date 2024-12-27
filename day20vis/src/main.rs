@@ -303,7 +303,7 @@ enum Tile {
 
 type InputEnt = Vec<Tile>;
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     line.chars()
         .map(|c| match c {
             '.' => Tile::Empty,

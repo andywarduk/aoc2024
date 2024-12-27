@@ -185,7 +185,7 @@ enum Tile {
 
 type MapLine = Vec<Tile>;
 
-fn input_transform(line: String) -> MapLine {
+fn input_transform(line: &str) -> MapLine {
     // Convert chars to tiles
     line.chars()
         .map(|c| match c {

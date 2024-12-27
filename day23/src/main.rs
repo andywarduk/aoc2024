@@ -78,7 +78,7 @@ struct InputEnt {
     c2: String,
 }
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     let mut comps = line.split('-');
 
     InputEnt {

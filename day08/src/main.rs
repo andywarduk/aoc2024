@@ -91,7 +91,7 @@ fn part2(input: &[InputEnt]) -> u64 {
 
 type InputEnt = Vec<char>;
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     line.chars().collect()
 }
 

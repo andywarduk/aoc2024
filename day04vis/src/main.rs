@@ -215,7 +215,7 @@ fn draw_hits(input: &[InputEnt], hits: &[Vec<u8>], file: &str) -> Result<(), Box
 
 type InputEnt = Vec<u8>;
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     // Convert board chars to word letter index
     line.chars()
         .map(|c| match c {

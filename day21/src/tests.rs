@@ -36,7 +36,7 @@ fn test2() {
     let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 0);
     let mut keys_cache = KeysCache::default();
 
-    let keys = input_transform("029A".to_string());
+    let keys = input_transform("029A");
 
     let min = press_keys(&keypads, 0, &keys, &mut keys_cache);
 
@@ -49,7 +49,7 @@ fn test3() {
     let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 1);
     let mut keys_cache = KeysCache::default();
 
-    let keys = input_transform("029A".to_string());
+    let keys = input_transform("029A");
 
     let min = press_keys(&keypads, 0, &keys, &mut keys_cache);
 
@@ -62,7 +62,7 @@ fn test4() {
     let keypads = build_keypad_chain(&numkeypad, &dirkeypad, 2);
     let mut keys_cache = KeysCache::default();
 
-    let keys = input_transform("029A".to_string());
+    let keys = input_transform("029A");
 
     let min = press_keys(&keypads, 0, &keys, &mut keys_cache);
 

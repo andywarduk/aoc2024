@@ -79,7 +79,7 @@ struct Equation {
 
 // Input parsing
 
-fn input_transform(line: String) -> Equation {
+fn input_transform(line: &str) -> Equation {
     let mut s = line.split(':');
 
     let answer = s

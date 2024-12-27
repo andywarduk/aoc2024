@@ -105,7 +105,7 @@ fn part2(input: &[InputEnt]) -> u64 {
 
 type InputEnt = Vec<u8>;
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     // Convert board chars to word letter index
     line.chars()
         .map(|c| match c {

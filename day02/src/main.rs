@@ -43,7 +43,7 @@ fn is_tolerable(nums: &[i8]) -> bool {
 
 type InputEnt = Vec<i8>;
 
-fn input_transform(line: String) -> InputEnt {
+fn input_transform(line: &str) -> InputEnt {
     line.split_ascii_whitespace()
         .map(|s| {
             s.parse::<i8>()
