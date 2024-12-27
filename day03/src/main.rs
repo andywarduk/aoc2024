@@ -1,11 +1,11 @@
 use regex::Regex;
 use std::error::Error;
 
-use aoc::input::read_input_file;
+use aoc::input::parse_input;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
-    let input = read_input_file(3)?;
+    let input = parse_input(3, |s| s.to_string())?;
 
     // Run parts
     println!("Part 1: {}", part1(&input));

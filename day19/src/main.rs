@@ -1,11 +1,11 @@
 use std::error::Error;
 
-use aoc::input::read_input_file;
+use aoc::input::parse_input;
 use fxhash::FxHashSet;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
-    let (available, designs) = parse_input();
+    let (available, designs) = parse_input(19, parse_input_str)?;
 
     // Get number of valid arrangements for each design
     let composable = build_composable(&available, &designs);
@@ -74,13 +74,7 @@ fn build_composable(available: &FxHashSet<String>, designs: &[String]) -> Vec<us
 
 // Input parsing
 
-fn parse_input() -> (FxHashSet<String>, Vec<String>) {
-    let input = read_input_file(19).unwrap();
-
-    parse_input_string(&input)
-}
-
-fn parse_input_string(input: &str) -> (FxHashSet<String>, Vec<String>) {
+fn parse_input_str(input: &str) -> (FxHashSet<String>, Vec<String>) {
     let mut sections = input.split("\n\n");
 
     let available = sections.next().unwrap();

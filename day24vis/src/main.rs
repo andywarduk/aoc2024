@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use aoc::input::read_input_file;
+use aoc::input::parse_input;
 use fxhash::{FxHashMap, FxHashSet};
 
 mod circuit;
@@ -10,8 +10,7 @@ use circuit::{Circuit, Conn, Edge, Gate, Input, Op, Output};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
-    let input = read_input_file(24).unwrap();
-    let mut circuit = parse_input(&input);
+    let mut circuit = parse_input(24, parse_input_str)?;
 
     // Run the circuit
     circuit.run();
@@ -351,7 +350,7 @@ fn follow_err(_context: &FollowContext, _msg: String) {}
 
 // Input parsing
 
-fn parse_input(input: &str) -> Circuit {
+fn parse_input_str(input: &str) -> Circuit {
     let mut gate_in = FxHashMap::default();
     let mut gate_out = FxHashMap::default();
 

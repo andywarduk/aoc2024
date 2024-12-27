@@ -1,11 +1,11 @@
 use std::error::Error;
 
-use aoc::input::read_input_file;
+use aoc::input::parse_input;
 use fxhash::FxHashMap;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
-    let input = read_input_file(15)?;
+    let input = parse_input(15, |s| s.to_string())?;
 
     // Run parts
     println!("Part 1: {}", part1(&input));
@@ -15,14 +15,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn part1(input: &str) -> u64 {
-    let (mut map, moves) = parse_input(input, false);
+    let (mut map, moves) = parse_input_str(input, false);
 
     make_moves(&mut map, moves);
     calc_gps(&map, Item::Box)
 }
 
 fn part2(input: &str) -> u64 {
-    let (mut map, moves) = parse_input(input, true);
+    let (mut map, moves) = parse_input_str(input, true);
 
     make_moves(&mut map, moves);
     calc_gps(&map, Item::BoxL)
@@ -145,7 +145,7 @@ impl Move {
 
 // Input parsing
 
-fn parse_input(input: &str, double: bool) -> (Map, Vec<Move>) {
+fn parse_input_str(input: &str, double: bool) -> (Map, Vec<Move>) {
     let mut sections = input.split("\n\n");
 
     let map = sections.next().unwrap();

@@ -33,7 +33,7 @@ const EXAMPLE1: &str = "\
 
 #[test]
 fn test1() {
-    let (orders, prints) = parse_input(EXAMPLE1);
+    let (orders, prints) = parse_input_str(EXAMPLE1);
     assert_eq!(part1(&orders, &prints), 143);
     assert_eq!(part2(&orders, &prints), 123);
 }

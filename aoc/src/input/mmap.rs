@@ -31,10 +31,8 @@ impl Input {
             .map(|line| std::str::from_utf8(line).expect("Line is not valid UTF-8"))
     }
 
-    pub fn to_string(&self) -> Result<String, Box<dyn Error>> {
-        let s = String::from_utf8(self.mmap.as_ref().to_vec())?;
-
-        Ok(s)
+    pub fn as_str(&self) -> Result<&str, Box<dyn Error>> {
+        Ok(std::str::from_utf8(self.mmap.as_ref())?)
     }
 
     fn open(file: &str) -> std::io::Result<File> {

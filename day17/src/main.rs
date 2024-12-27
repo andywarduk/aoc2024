@@ -1,13 +1,13 @@
 use std::error::Error;
 
-use aoc::input::read_input_file;
+use aoc::input::parse_input;
 use device::{Device, Reg};
 use regex::Regex;
 
 mod device;
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let (rega, program) = parse_input();
+    let (rega, program) = parse_input(17, parse_input_str)?;
 
     // Run parts
     println!("Part 1: {}", part1(rega, &program));
@@ -77,13 +77,7 @@ fn part2(program: &[u8]) -> u64 {
 
 // Input parsing
 
-fn parse_input() -> (u64, Vec<u8>) {
-    let input = read_input_file(17).unwrap();
-
-    parse_input_string(&input)
-}
-
-fn parse_input_string(input: &str) -> (u64, Vec<u8>) {
+fn parse_input_str(input: &str) -> (u64, Vec<u8>) {
     let prog_re = Regex::new(r"Program: ([\d,]*)").unwrap();
 
     let program = prog_re

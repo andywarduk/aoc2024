@@ -1,11 +1,11 @@
 use std::error::Error;
 
 use aoc::gif::Gif;
-use aoc::input::read_input_file;
+use aoc::input::parse_input;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
-    let input = read_input_file(9)?;
+    let input = parse_input(9, |s| s.to_string())?;
 
     part2(&input)?;
 

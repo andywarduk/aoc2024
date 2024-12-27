@@ -1,11 +1,10 @@
 use std::error::Error;
 
-use aoc::input::read_input_file;
+use aoc::input::parse_input;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
-    let input = read_input_file(25).unwrap();
-    let (locks, keys) = parse_input(&input);
+    let (locks, keys) = parse_input(25, parse_input_str)?;
 
     // Run part
     println!("Part 1: {}", part1(&locks, &keys));
@@ -45,7 +44,7 @@ struct Lock {
     heights: Vec<u8>,
 }
 
-fn parse_input(input: &str) -> (Vec<Lock>, Vec<Key>) {
+fn parse_input_str(input: &str) -> (Vec<Lock>, Vec<Key>) {
     let blocks = input.split("\n\n");
 
     let mut locks = Vec::new();

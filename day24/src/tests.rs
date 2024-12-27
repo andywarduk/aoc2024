@@ -15,7 +15,7 @@ x02 OR y02 -> z02
 
 #[test]
 fn test1() {
-    let mut circuit = parse_input(EXAMPLE1);
+    let mut circuit = parse_input_str(EXAMPLE1);
 
     assert_eq!(part1(&mut circuit), 4);
 }
@@ -72,7 +72,7 @@ tnw OR pbm -> gnj
 
 #[test]
 fn test2() {
-    let mut circuit = parse_input(EXAMPLE2);
+    let mut circuit = parse_input_str(EXAMPLE2);
 
     assert_eq!(part1(&mut circuit), 2024);
 }

@@ -44,7 +44,7 @@ const EXAMPLE1: &str = "\
 
 #[test]
 fn test1() {
-    let (locks, keys) = parse_input(EXAMPLE1);
+    let (locks, keys) = parse_input_str(EXAMPLE1);
 
     println!("locks: {:?}", locks);
     println!("keys: {:?}", keys);

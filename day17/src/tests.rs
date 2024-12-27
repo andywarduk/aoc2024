@@ -79,7 +79,7 @@ Program: 0,1,5,4,3,0
 
 #[test]
 fn test7() {
-    let (rega, program) = parse_input_string(EXAMPLE1);
+    let (rega, program) = parse_input_str(EXAMPLE1);
 
     assert_eq!("4,6,3,5,6,3,5,2,1,0", part1(rega, &program));
 }
@@ -95,7 +95,7 @@ Program: 0,3,5,4,3,0
 
 #[test]
 fn test8() {
-    let (_, program) = parse_input_string(EXAMPLE3);
+    let (_, program) = parse_input_str(EXAMPLE3);
 
     let mut device = Device::new()
         .debug(true)

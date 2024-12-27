@@ -1,11 +1,11 @@
 use std::error::Error;
 
-use aoc::input::read_input_file;
+use aoc::input::parse_input;
 use regex::Regex;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
-    let input = get_input()?;
+    let input = parse_input(13, parse_input_str)?;
 
     // Run parts
     println!("Part 1: {}", part1(&input));
@@ -64,13 +64,7 @@ struct Claw {
     target: Coord,
 }
 
-fn get_input() -> Result<Vec<Claw>, Box<dyn Error>> {
-    let file = read_input_file(13)?;
-
-    Ok(parse_input(&file))
-}
-
-fn parse_input(file: &str) -> Vec<Claw> {
+fn parse_input_str(file: &str) -> Vec<Claw> {
     let re = Regex::new(r"\d+").expect("Failed to create regex");
 
     file.split("\n\n")

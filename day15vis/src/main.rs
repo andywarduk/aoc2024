@@ -2,12 +2,12 @@ use std::{collections::HashMap, error::Error};
 
 use aoc::{
     gif::{Gif, IdenticalAction},
-    input::read_input_file,
+    input::parse_input,
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
-    let input = read_input_file(15)?;
+    let input = parse_input(15, |s| s.to_string())?;
 
     // Run parts
     render(&input, "vis/day15-1.gif", false)?;
@@ -21,7 +21,7 @@ const PALETTE: [[u8; 3]; 4] = [[0, 0, 0], [255, 64, 64], [128, 128, 255], [255, 
 const CELLSIZE: usize = 12;
 
 fn render(input: &str, file: &str, double: bool) -> Result<(), Box<dyn Error>> {
-    let (mut map, moves) = parse_input(input, double);
+    let (mut map, moves) = parse_input_str(input, double);
 
     let mut gif = Gif::new(
         file,
@@ -270,7 +270,7 @@ impl Move {
 
 // Input parsing
 
-fn parse_input(input: &str, double: bool) -> (Map, Vec<Move>) {
+fn parse_input_str(input: &str, double: bool) -> (Map, Vec<Move>) {
     let mut sections = input.split("\n\n");
 
     let map = sections.next().unwrap();

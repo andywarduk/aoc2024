@@ -15,8 +15,8 @@ Part 2: bmn,jss,mvb,rds,wss,z08,z18,z23
                    0  signals received
                    0  voluntary context switches
                    4  involuntary context switches
-            24971077  instructions retired
-             6260529  cycles elapsed
+            24946350  instructions retired
+             6094310  cycles elapsed
              1114752  peak memory footprint
 ------------------------------------------
 Darwin 24.2.0 Darwin Kernel Version 24.2.0: Fri Dec 6 18:51:28 PST 2024; root:xnu-11215.61.5~2/RELEASE_ARM64_T8112 arm64 arm

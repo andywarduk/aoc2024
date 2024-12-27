@@ -15,7 +15,7 @@ bbrgwb
 
 #[test]
 fn test1() {
-    let (available, designs) = parse_input_string(EXAMPLE1);
+    let (available, designs) = parse_input_str(EXAMPLE1);
 
     let composable = build_composable(&available, &designs);
 

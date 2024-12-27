@@ -20,7 +20,7 @@ Prize: X=18641, Y=10279
 
 #[test]
 fn test1() {
-    let input = parse_input(EXAMPLE1);
+    let input = parse_input_str(EXAMPLE1);
     assert_eq!(part1(&input), 480);
     assert_eq!(part2(&input), 875318608908);
 }
