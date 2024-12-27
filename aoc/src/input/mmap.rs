@@ -27,6 +27,7 @@ impl Input {
             .as_ref()
             .split(|&b| b == b'\n')
             .map(|line| line.strip_suffix(b"\r").unwrap_or(line))
+            .filter(|line| !line.is_empty())
             .map(|line| std::str::from_utf8(line).expect("Line is not valid UTF-8"))
     }
 

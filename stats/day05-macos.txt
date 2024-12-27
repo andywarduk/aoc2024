@@ -15,8 +15,8 @@ Part 2: 4716
                    0  signals received
                    0  voluntary context switches
                    4  involuntary context switches
-            13825024  instructions retired
-             3795829  cycles elapsed
+            13838190  instructions retired
+             3977442  cycles elapsed
               885312  peak memory footprint
 ------------------------------------------
 Darwin 24.2.0 Darwin Kernel Version 24.2.0: Fri Dec 6 18:51:28 PST 2024; root:xnu-11215.61.5~2/RELEASE_ARM64_T8112 arm64 arm
