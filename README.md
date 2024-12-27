@@ -48,3 +48,7 @@ Solutions to Advent of Code 2024 [https://adventofcode.com/2024]
 ### day 20 ###
 
 ![day 20](./vis/day20.gif)
+
+### day 24 ###
+
+![day 24](./vis/day24.svg)
