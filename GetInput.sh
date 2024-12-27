@@ -9,9 +9,15 @@ day=$1
 daypad="$(printf %02d $day)"
 
 token="$(cat token.txt)"
+
 if [ "x$token" == "x" ]; then
 	echo "No token"
 	exit 2
+fi
+
+if [ ! -d inputs ]
+then
+	mkdir inputs
 fi
 
 curl -sS --cookie "session=$token" https://adventofcode.com/2024/day/$day/input -o inputs/day$daypad.txt
