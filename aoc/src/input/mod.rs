@@ -37,15 +37,3 @@ where
 {
     Ok(test.lines().map(tfn).collect())
 }
-
-/// Parse an test input file to a vector with a given transform
-pub fn parse_test_input_vec<T, F>(
-    day: usize,
-    example: usize,
-    tfn: F,
-) -> Result<Vec<T>, Box<dyn Error>>
-where
-    F: FnMut(&str) -> T,
-{
-    Ok(Input::new_example(day, example)?.lines().map(tfn).collect())
-}
