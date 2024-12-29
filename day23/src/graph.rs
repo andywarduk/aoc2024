@@ -100,23 +100,38 @@ impl Graph {
         let mut max_len = 0;
         let mut max_sets = Vec::new();
 
-        self.bron_kerbosch(&mut |set| match (set.len()).cmp(&max_len) {
-            std::cmp::Ordering::Less => (),
-            std::cmp::Ordering::Equal => max_sets.push(set.clone()),
-            std::cmp::Ordering::Greater => {
-                max_sets = vec![set.clone()];
-                max_len = set.len();
+        // Call Bron Kerbosh on the graph
+        self.bron_kerbosch(&mut |set| {
+            // Check length of this clique against the largest we've seen
+            match (set.len()).cmp(&max_len) {
+                std::cmp::Ordering::Less => {
+                    // Smaller than the largest so far
+                }
+                std::cmp::Ordering::Equal => {
+                    // Equal to the largest so far - add to largest vector
+                    max_sets.push(set.clone())
+                }
+                std::cmp::Ordering::Greater => {
+                    // Greater than the largest so far - replace largest vector
+                    max_sets = vec![set.clone()];
+                    max_len = set.len();
+                }
             }
         });
 
+        // Convert maximum sets to return vector
         max_sets
             .iter()
             .map(|set| {
+                // Convert to vector mapping the node ID to string
                 let mut vec = set
                     .iter()
                     .map(|ne| self.node_name(*ne).to_string())
                     .collect::<Vec<_>>();
+
+                // Sort the vector
                 vec.sort();
+
                 vec
             })
             .collect()

@@ -1,9 +1,9 @@
 use std::error::Error;
 
 use aoc::input::parse_input;
-use graph::Graph;
 
 mod graph;
+use graph::Graph;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
