@@ -1,5 +1,3 @@
-use aoc::input::parse_test_vec;
-
 use super::*;
 
 const EXAMPLE1: &str = "\
@@ -64,14 +62,21 @@ td,wh,yn
 
 #[test]
 fn test1() {
-    let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
-    let graph = build_graph(input);
+    let graph = parse_input_str(EXAMPLE1);
     let connected = CONNECTED_3.lines().collect::<Vec<_>>();
     let mut found = Vec::new();
 
     graph.walk(&mut |set| {
         if set.len() == 3 {
-            found.push(set.join(","));
+            let mut set_names = set
+                .iter()
+                .map(|ne| graph.node_name(*ne))
+                .collect::<Vec<_>>();
+
+            set_names.sort();
+
+            found.push(set_names.join(","));
+
             false
         } else {
             true
@@ -85,15 +90,21 @@ fn test1() {
 
 #[test]
 fn test2() {
-    let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
-    let graph = build_graph(input);
+    let graph = parse_input_str(EXAMPLE1);
     let connected = CONNECTED_3T.lines().collect::<Vec<_>>();
     let mut found = Vec::new();
 
     graph.walk(&mut |set| {
         if set.len() == 3 {
-            if set.iter().any(|n| n.starts_with('t')) {
-                found.push(set.join(","));
+            if set.iter().any(|ne| graph.node_name(*ne).starts_with('t')) {
+                let mut set_names = set
+                    .iter()
+                    .map(|ne| graph.node_name(*ne))
+                    .collect::<Vec<_>>();
+
+                set_names.sort();
+
+                found.push(set_names.join(","));
             }
 
             false
@@ -124,8 +135,7 @@ fn test3() {
 
 #[test]
 fn test4() {
-    let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
-    let graph = build_graph(input);
+    let graph = parse_input_str(EXAMPLE1);
 
     assert_eq!(part1(&graph), 7);
     assert_eq!(part2(&graph), "co,de,ka,ta");

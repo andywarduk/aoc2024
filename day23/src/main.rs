@@ -1,14 +1,13 @@
 use std::error::Error;
 
-use aoc::input::parse_input_vec;
+use aoc::input::parse_input;
 use graph::Graph;
 
 mod graph;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
-    let input = parse_input_vec(23, input_transform)?;
-    let graph = build_graph(input);
+    let graph = parse_input(23, parse_input_str)?;
 
     // Run parts
     println!("Part 1: {}", part1(&graph));
@@ -25,7 +24,7 @@ fn part1(graph: &Graph) -> u64 {
         // Got a set of three?
         if set.len() == 3 {
             // Yes - check if any start with 't'
-            if set.iter().any(|n| n.starts_with('t')) {
+            if set.iter().any(|&n| graph.node_name(n).starts_with('t')) {
                 // Yes - count
                 count += 1;
             }
@@ -41,39 +40,29 @@ fn part1(graph: &Graph) -> u64 {
 }
 
 fn part2(graph: &Graph) -> String {
+    // Get maximum cliques for the graph
     let max_cliques = graph.max_cliques();
 
+    // Should only be one
     assert_eq!(max_cliques.len(), 1);
 
+    // Return separated by ,
     max_cliques[0].join(",")
-}
-
-fn build_graph(input: Vec<InputEnt>) -> Graph {
-    // Create new graph
-    let mut graph = Graph::default();
-
-    // Process each line of the input
-    for line in input {
-        graph.add_edge(&line.c1, &line.c2);
-    }
-
-    graph
 }
 
 // Input parsing
 
-struct InputEnt {
-    c1: String,
-    c2: String,
-}
+fn parse_input_str(input: &str) -> Graph {
+    // Create new graph
+    let mut graph = Graph::default();
 
-fn input_transform(line: &str) -> InputEnt {
-    let mut comps = line.split('-');
-
-    InputEnt {
-        c1: comps.next().unwrap().to_string(),
-        c2: comps.next().unwrap().to_string(),
+    // Process each line of the input
+    for line in input.lines() {
+        let mut nodes = line.split('-');
+        graph.add_edge(nodes.next().unwrap(), nodes.next().unwrap());
     }
+
+    graph
 }
 
 #[cfg(test)]
