@@ -41,22 +41,11 @@ fn part1(graph: &Graph) -> u64 {
 }
 
 fn part2(graph: &Graph) -> String {
-    let mut largest_len = 0;
-    let mut largest_set: Vec<&str> = Vec::new();
+    let max_cliques = graph.max_cliques();
 
-    // Walk the graph finding sets of interconnected nodes
-    graph.walk(&mut |set| {
-        // Is this set bigger than the biggest we've seen?
-        if set.len() > largest_len {
-            // Yes - save it
-            largest_len = set.len();
-            largest_set = set.clone();
-        }
+    assert_eq!(max_cliques.len(), 1);
 
-        true
-    });
-
-    largest_set.join(",")
+    max_cliques[0].join(",")
 }
 
 fn build_graph(input: Vec<InputEnt>) -> Graph {

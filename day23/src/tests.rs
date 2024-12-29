@@ -109,6 +109,21 @@ fn test2() {
 
 #[test]
 fn test3() {
+    let mut graph = Graph::default();
+
+    graph.add_edge("1", "2");
+    graph.add_edge("1", "5");
+    graph.add_edge("2", "3");
+    graph.add_edge("2", "5");
+    graph.add_edge("3", "4");
+    graph.add_edge("4", "5");
+    graph.add_edge("4", "6");
+
+    assert_eq!(graph.max_cliques(), vec![vec!["1", "2", "5"]]);
+}
+
+#[test]
+fn test4() {
     let input = parse_test_vec(EXAMPLE1, input_transform).unwrap();
     let graph = build_graph(input);
 
