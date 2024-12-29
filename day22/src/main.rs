@@ -1,4 +1,7 @@
+#![feature(portable_simd)]
+
 use std::error::Error;
+use std::simd::prelude::*;
 
 use aoc::input::parse_input_vec;
 
@@ -36,6 +39,8 @@ const RANGEP2: usize = RANGE.pow(2);
 const RANGEP3: usize = RANGE.pow(3);
 const RANGEP4: usize = RANGE.pow(4);
 
+const MULT: Simd<u16, 4> = u16x4::from_array([1, RANGE as u16, RANGEP2 as u16, RANGEP3 as u16]);
+
 fn part2(input: &[u64]) -> u64 {
     // Map 4 price changes to total number of bananas
     let mut set = [false; RANGEP4];
@@ -58,7 +63,7 @@ fn part2(input: &[u64]) -> u64 {
         // Calculate the price changes
         let diffs = prices
             .windows(2)
-            .map(|a| ((a[1] as i8 - a[0] as i8) + 9) as u8) // range 0-18
+            .map(|a| ((a[1] as i8 - a[0] as i8) + 9) as u16) // range 0-18
             .collect::<Vec<_>>();
 
         // Map windows of 4 price changes
@@ -66,10 +71,9 @@ fn part2(input: &[u64]) -> u64 {
             .windows(4)
             .map(|arr| {
                 // ... build array element
-                arr[0] as usize
-                    + (arr[1] as usize * RANGE)
-                    + (arr[2] as usize * RANGEP2)
-                    + (arr[3] as usize * RANGEP3)
+                let diffs = u16x4::from_slice(arr);
+                let diffs_mult = diffs * MULT;
+                diffs_mult.reduce_sum() as usize
             })
             .enumerate()
             .for_each(|(i, elem)| {
