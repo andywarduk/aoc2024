@@ -1,13 +1,10 @@
-#![feature(array_windows)]
-
 use std::error::Error;
 
 use aoc::input::parse_input_vec;
-use fxhash::{FxHashMap, FxHashSet};
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Get input
-    let input = parse_input_vec(22, input_transform)?;
+    let input = parse_input_vec(22, |line| line.parse::<u64>().unwrap())?;
 
     // Run parts
     println!("Part 1: {}", part1(&input));
@@ -34,10 +31,15 @@ fn part1(input: &[u64]) -> u64 {
         .sum()
 }
 
+const RANGE: usize = 19;
+const RANGEP2: usize = RANGE.pow(2);
+const RANGEP3: usize = RANGE.pow(3);
+const RANGEP4: usize = RANGE.pow(4);
+
 fn part2(input: &[u64]) -> u64 {
     // Map 4 price changes to total number of bananas
-    let mut diffmap: FxHashMap<u32, u64> = FxHashMap::default();
-    let mut lhashset: FxHashSet<u32> = FxHashSet::default();
+    let mut set = [false; RANGEP4];
+    let mut bananas = [0u16; RANGEP4];
 
     for line in input {
         // Calculate 2000 prices
@@ -46,39 +48,44 @@ fn part2(input: &[u64]) -> u64 {
         let prices = (0..ITERS)
             .map(|_| {
                 hashstep(&mut secret);
-                secret % 10
+                (secret % 10) as u8
             })
             .collect::<Vec<_>>();
+
+        // Initialise set flags
+        set.fill(false);
 
         // Calculate the price changes
         let diffs = prices
             .windows(2)
-            .map(|a| (a[1] as i8 - a[0] as i8) as u8)
+            .map(|a| ((a[1] as i8 - a[0] as i8) + 9) as u8) // range 0-18
             .collect::<Vec<_>>();
 
-        // Clear loop hash set
-        lhashset.clear();
-
-        // Iterate set of 4 price changes for this input line
+        // Map windows of 4 price changes
         diffs
-            .array_windows::<4>()
-            .zip(prices.iter().skip(4))
-            .for_each(|(set, price)| {
-                // Build u32 from 4 u8s
-                let key = u32::from_ne_bytes(*set);
-
-                // Already got this set of diffs?
-                if lhashset.insert(key) {
-                    // No - update the total number of bananas
-                    *diffmap.entry(key).or_insert(0) += *price;
+            .windows(4)
+            .map(|arr| {
+                // ... build array element
+                arr[0] as usize
+                    + (arr[1] as usize * RANGE)
+                    + (arr[2] as usize * RANGEP2)
+                    + (arr[3] as usize * RANGEP3)
+            })
+            .enumerate()
+            .for_each(|(i, elem)| {
+                // Already set?
+                if !set[elem] {
+                    // No - accumulate
+                    bananas[elem] += prices[i + 4] as u16;
+                    set[elem] = true;
                 }
             });
     }
 
     // Get the max number of bananas possible
-    let max = diffmap.values().max().copied().unwrap();
+    let max = bananas.iter().max().unwrap();
 
-    max
+    *max as u64
 }
 
 fn hashstep(secret: &mut u64) {
@@ -86,16 +93,9 @@ fn hashstep(secret: &mut u64) {
     *secret &= 0xffffff;
 
     *secret ^= *secret >> 5;
-    *secret &= 0xffffff;
 
     *secret ^= *secret << 11;
     *secret &= 0xffffff;
-}
-
-// Input parsing
-
-fn input_transform(line: &str) -> u64 {
-    line.parse::<u64>().unwrap()
 }
 
 #[cfg(test)]

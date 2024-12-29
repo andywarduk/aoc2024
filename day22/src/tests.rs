@@ -81,6 +81,6 @@ const EXAMPLE3: &str = "\
 
 #[test]
 fn test3() {
-    let input = parse_test_vec(EXAMPLE3, input_transform).unwrap();
+    let input = parse_test_vec(EXAMPLE3, |line| line.parse::<u64>().unwrap()).unwrap();
     assert_eq!(part2(&input), 23);
 }
